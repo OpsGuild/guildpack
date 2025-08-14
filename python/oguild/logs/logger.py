@@ -1,4 +1,5 @@
 import ast
+import inspect
 import json
 import logging
 import os
@@ -104,13 +105,23 @@ class SmartLogger(logging.Logger):
 class Logger:
     def __init__(
         self,
-        logger_name: str = __name__,
+        logger_name: str = None,
         log_file: str = None,
         log_level: int = getattr(
             logging, os.getenv("LOG_LEVEL", "INFO").upper()
         ),
-        log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s [%(asctime)s]",
+        log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s"
+        "[%(asctime)s]",
     ):
+        if logger_name is None:
+            for frame_info in inspect.stack():
+                module = inspect.getmodule(frame_info.frame)
+                if module and not module.__name__.startswith("oguild.logs"):
+                    logger_name = module.__name__
+                    break
+            else:
+                logger_name = "__main__"
+
         logging.setLoggerClass(SmartLogger)
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(log_level)
