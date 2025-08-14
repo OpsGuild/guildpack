@@ -102,35 +102,35 @@ class SmartLogger(logging.Logger):
 
 
 class Logger:
-    """Logger setup that supports per-call formatting"""
-
     def __init__(
         self,
-        logger_name: str,
-        log_file: str = "/logs/app.log",
+        logger_name: str = __name__,
+        log_file: str = None,
         log_level: int = getattr(
             logging, os.getenv("LOG_LEVEL", "INFO").upper()
         ),
+        log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s [%(asctime)s]",
     ):
         logging.setLoggerClass(SmartLogger)
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(log_level)
         self.logger.propagate = False
 
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-
         if not self.logger.handlers:
-            formatter = logging.Formatter(
-                "\n%(levelname)s: (%(name)s) == %(message)s [%(asctime)s]"
-            )
-
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
+            formatter = logging.Formatter(log_format)
 
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
+            if log_file:
+                os.makedirs(os.path.dirname(log_file), exist_ok=True)
+                file_handler = logging.FileHandler(log_file)
+                file_handler.setFormatter(formatter)
+                self.logger.addHandler(file_handler)
+
     def get_logger(self):
         return self.logger
+
+
+logger = Logger().get_logger()
