@@ -124,6 +124,13 @@ class Logger:
         logstash_port: int = 5959,
         logstash_database_path: str = None,
     ):
+        try:
+            logstash_port = (
+                int(logstash_port) if logstash_port is not None else None
+            )
+        except ValueError:
+            raise ValueError(f"Invalid logstash_port: {logstash_port}")
+
         if logger_name is None:
             for frame_info in inspect.stack():
                 module = inspect.getmodule(frame_info.frame)
