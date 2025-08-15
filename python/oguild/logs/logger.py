@@ -6,6 +6,14 @@ import os
 import re
 import uuid
 
+try:
+    from logstash_async.formatter import LogstashFormatter
+    from logstash_async.handler import AsynchronousLogstashHandler
+
+    LOGSTASH_AVAILABLE = True
+except ImportError:
+    LOGSTASH_AVAILABLE = False
+
 
 class SmartLogger(logging.Logger):
     uuid_pattern = re.compile(r"UUID\(['\"]([0-9a-fA-F\-]+)['\"]\)")
@@ -110,8 +118,11 @@ class Logger:
         log_level: int = getattr(
             logging, os.getenv("LOG_LEVEL", "INFO").upper()
         ),
-        log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s"
-        "[%(asctime)s]",
+        log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s "
+        " [%(asctime)s]",
+        logstash_host: str = None,
+        logstash_port: int = 5959,
+        logstash_database_path: str = "./logs/logstash.db",
     ):
         if logger_name is None:
             for frame_info in inspect.stack():
@@ -139,6 +150,20 @@ class Logger:
                 file_handler = logging.FileHandler(log_file)
                 file_handler.setFormatter(formatter)
                 self.logger.addHandler(file_handler)
+
+            if logstash_host and LOGSTASH_AVAILABLE:
+                try:
+                    logstash_handler = AsynchronousLogstashHandler(
+                        host=logstash_host,
+                        port=logstash_port,
+                        database_path=logstash_database_path,
+                    )
+                    logstash_handler.setFormatter(LogstashFormatter())
+                    self.logger.addHandler(logstash_handler)
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to initialize Logstash handler: {e}"
+                    )
 
     def get_logger(self):
         return self.logger
