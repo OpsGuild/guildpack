@@ -160,4 +160,4 @@ logstash = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "b9ff969ccf3a18fe35c15cdf11cbb2d374c549999dca4af85b3e65444746d73b"
+content-hash = "f6fb110b620c5447ec2fe9f157b3bed0d4258acf6061f181720af985fdccf2cd"

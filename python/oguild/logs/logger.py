@@ -122,7 +122,7 @@ class Logger:
         " [%(asctime)s]",
         logstash_host: str = None,
         logstash_port: int = 5959,
-        logstash_database_path: str = "./logs/logstash.db",
+        logstash_database_path: str = None,
     ):
         if logger_name is None:
             for frame_info in inspect.stack():
