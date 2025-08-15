@@ -154,7 +154,10 @@ files = [
     {file = "typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36"},
 ]
 
+[extras]
+logstash = []
+
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "d24aaf86dc3d5e69b229113c30e54066d0e7992d5fa2ca93a650bffd477c8d33"
+content-hash = "b9ff969ccf3a18fe35c15cdf11cbb2d374c549999dca4af85b3e65444746d73b"
