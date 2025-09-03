@@ -123,79 +123,110 @@ class CommonErrorHandler:
 
     def _handle_standard_exceptions(self, e: Exception) -> Dict[str, Any]:
         """Handle standard Python exceptions."""
-        if isinstance(e, ValueError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 400,
-                "message": str(e) or "Invalid value provided.",
-            }
-        elif isinstance(e, TypeError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 400,
-                "message": str(e) or "Type mismatch in request.",
-            }
-        elif isinstance(e, KeyError):
-            key = str(e).strip("'\"") if e.args else "Key"
-            return {
-                "level": "WARNING",
-                "http_status_code": 400,
-                "message": f"Missing key: {key}.",
-            }
-        elif isinstance(e, IndexError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 400,
-                "message": "Index out of range.",
-            }
-        elif isinstance(e, AttributeError):
-            return {
-                "level": "ERROR",
-                "http_status_code": 500,
-                "message": "Attribute error in processing the request.",
-            }
-        elif isinstance(e, PermissionError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 403,
-                "message": "You do not have permission to perform this action.",
-            }
-        elif isinstance(e, FileNotFoundError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 404,
-                "message": "Requested file was not found.",
-            }
-        elif isinstance(e, MemoryError):
-            return {
-                "level": "ERROR",
-                "http_status_code": 507,
-                "message": "Insufficient memory to process the request.",
-            }
-        elif isinstance(e, TimeoutError):
-            return {
-                "level": "WARNING",
-                "http_status_code": 408,
-                "message": "Request timeout occurred.",
-            }
-        elif isinstance(e, ConnectionError):
-            return {
-                "level": "ERROR",
-                "http_status_code": 503,
-                "message": "Connection error occurred.",
-            }
-        elif isinstance(e, OSError):
-            return {
-                "level": "ERROR",
-                "http_status_code": 500,
-                "message": "Operating system error occurred.",
-            }
-        else:
-            return {
-                "level": "ERROR",
-                "http_status_code": getattr(e, "http_status_code", 500),
-                "message": str(e) or "An unexpected error occurred.",
-            }
+        exception_handlers = {
+            ValueError: self._handle_value_error,
+            TypeError: self._handle_type_error,
+            KeyError: self._handle_key_error,
+            IndexError: self._handle_index_error,
+            AttributeError: self._handle_attribute_error,
+            PermissionError: self._handle_permission_error,
+            FileNotFoundError: self._handle_file_not_found_error,
+            MemoryError: self._handle_memory_error,
+            TimeoutError: self._handle_timeout_error,
+            ConnectionError: self._handle_connection_error,
+            OSError: self._handle_os_error,
+        }
+
+        handler = exception_handlers.get(type(e))
+        if handler:
+            return handler(e)
+
+        return self._handle_generic_error(e)
+
+    def _handle_value_error(self, e: ValueError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 400,
+            "message": str(e) or "Invalid value provided.",
+        }
+
+    def _handle_type_error(self, e: TypeError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 400,
+            "message": str(e) or "Type mismatch in request.",
+        }
+
+    def _handle_key_error(self, e: KeyError) -> Dict[str, Any]:
+        key = str(e).strip("'\"") if e.args else "Key"
+        return {
+            "level": "WARNING",
+            "http_status_code": 400,
+            "message": f"Missing key: {key}.",
+        }
+
+    def _handle_index_error(self, e: IndexError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 400,
+            "message": "Index out of range.",
+        }
+
+    def _handle_attribute_error(self, e: AttributeError) -> Dict[str, Any]:
+        return {
+            "level": "ERROR",
+            "http_status_code": 500,
+            "message": "Attribute error in processing the request.",
+        }
+
+    def _handle_permission_error(self, e: PermissionError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 403,
+            "message": "You do not have permission to perform this action.",
+        }
+
+    def _handle_file_not_found_error(self, e: FileNotFoundError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 404,
+            "message": "Requested file was not found.",
+        }
+
+    def _handle_memory_error(self, e: MemoryError) -> Dict[str, Any]:
+        return {
+            "level": "ERROR",
+            "http_status_code": 507,
+            "message": "Insufficient memory to process the request.",
+        }
+
+    def _handle_timeout_error(self, e: TimeoutError) -> Dict[str, Any]:
+        return {
+            "level": "WARNING",
+            "http_status_code": 408,
+            "message": "Request timeout occurred.",
+        }
+
+    def _handle_connection_error(self, e: ConnectionError) -> Dict[str, Any]:
+        return {
+            "level": "ERROR",
+            "http_status_code": 503,
+            "message": "Connection error occurred.",
+        }
+
+    def _handle_os_error(self, e: OSError) -> Dict[str, Any]:
+        return {
+            "level": "ERROR",
+            "http_status_code": 500,
+            "message": "Operating system error occurred.",
+        }
+
+    def _handle_generic_error(self, e: Exception) -> Dict[str, Any]:
+        return {
+            "level": "ERROR",
+            "http_status_code": getattr(e, "http_status_code", 500),
+            "message": str(e) or "An unexpected error occurred.",
+        }
 
     def get_exception_attributes(self, e: Exception) -> str:
         """Get attributes of an exception for logging."""

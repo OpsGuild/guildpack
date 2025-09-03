@@ -18,9 +18,9 @@ class TestEncodeJsonFields:
             "tags": ["tag1", "tag2"]
         }
         json_keys = ["metadata", "tags"]
-        
+
         result = await encode_json_fields(row, json_keys)
-        
+
         expected = {
             "id": 1,
             "name": "test",
@@ -45,9 +45,9 @@ class TestEncodeJsonFields:
             }
         ]
         json_keys = ["metadata"]
-        
+
         result = await encode_json_fields(rows, json_keys)
-        
+
         expected = [
             {
                 "id": 1,
@@ -72,9 +72,9 @@ class TestEncodeJsonFields:
             "tags": 123
         }
         json_keys = ["metadata", "tags"]
-        
+
         result = await encode_json_fields(row, json_keys)
-        
+
         # Should not change non-dict/list values
         expected = {
             "id": 1,
@@ -89,9 +89,9 @@ class TestEncodeJsonFields:
         """Test encoding when JSON keys don't exist in row."""
         row = {"id": 1, "name": "test"}
         json_keys = ["metadata", "tags"]
-        
+
         result = await encode_json_fields(row, json_keys)
-        
+
         # Should not change anything
         expected = {"id": 1, "name": "test"}
         assert result == expected
@@ -102,14 +102,14 @@ class TestEncodeJsonFields:
         # Create an object that can't be JSON serialized
         class NonSerializable:
             pass
-        
+
         row = {
             "id": 1,
             "name": "test",
             "metadata": {"key": NonSerializable()}
         }
         json_keys = ["metadata"]
-        
+
         # Should not raise an exception, should keep original value
         result = await encode_json_fields(row, json_keys)
         assert result == row
@@ -124,9 +124,9 @@ class TestEncodeJsonFields:
             "empty_list": []
         }
         json_keys = ["empty_dict", "empty_list"]
-        
+
         result = await encode_json_fields(row, json_keys)
-        
+
         expected = {
             "id": 1,
             "name": "test",

@@ -93,74 +93,66 @@ class DatabaseErrorHandler:
             "error_type": type(e).__name__,
         }
 
-        if isinstance(e, asyncpg.exceptions.UniqueViolationError):
-            error_info.update(self._handle_unique_violation(e))
-        elif isinstance(e, asyncpg.exceptions.ForeignKeyViolationError):
-            error_info.update(self._handle_foreign_key_violation(e))
-        elif isinstance(e, asyncpg.exceptions.CheckViolationError):
-            error_info.update(self._handle_check_violation(e))
-        elif isinstance(e, asyncpg.exceptions.NotNullViolationError):
-            error_info.update(self._handle_not_null_violation(e))
-        elif isinstance(e, asyncpg.exceptions.UndefinedColumnError):
-            error_info.update(self._handle_undefined_column(e))
-        elif isinstance(e, asyncpg.exceptions.DataError):
-            error_info.update(self._handle_data_error(e))
-        elif isinstance(e, asyncpg.exceptions.InvalidTextRepresentationError):
-            error_info.update(
-                {
-                    "http_status_code": 400,
-                    "message": "Invalid input syntax for a field.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.PostgresSyntaxError):
-            error_info.update(
-                {
-                    "http_status_code": 500,
-                    "message": "Something went wrong while processing your request.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.NumericValueOutOfRangeError):
-            error_info.update(
-                {
-                    "http_status_code": 400,
-                    "message": "A numeric value is out of range.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.DivisionByZeroError):
-            error_info.update(
-                {
-                    "http_status_code": 400,
-                    "message": "Attempted division by zero.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.StringDataRightTruncationError):
-            error_info.update(
-                {
-                    "http_status_code": 400,
-                    "message": "Input string is too long for the column.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.InvalidDatetimeFormatError):
-            error_info.update(
-                {
-                    "http_status_code": 400,
-                    "message": "Invalid datetime format.",
-                }
-            )
-        elif isinstance(e, asyncpg.exceptions.ConnectionDoesNotExistError):
-            error_info.update(
-                {
-                    "http_status_code": 503,
-                    "message": "Database connection is not available.",
-                }
-            )
+        # Use a mapping approach to reduce complexity
+        error_handlers = {
+            asyncpg.exceptions.UniqueViolationError: self._handle_unique_violation,
+            asyncpg.exceptions.ForeignKeyViolationError: self._handle_foreign_key_violation,
+            asyncpg.exceptions.CheckViolationError: self._handle_check_violation,
+            asyncpg.exceptions.NotNullViolationError: self._handle_not_null_violation,
+            asyncpg.exceptions.UndefinedColumnError: self._handle_undefined_column,
+            asyncpg.exceptions.DataError: self._handle_data_error,
+        }
+
+        # Check for specific error types with handlers
+        for error_type, handler in error_handlers.items():
+            if isinstance(e, error_type):
+                error_info.update(handler(e))
+                return error_info
+
+        # Handle specific error types without separate handlers
+        specific_errors = {
+            asyncpg.exceptions.InvalidTextRepresentationError: {
+                "http_status_code": 400,
+                "message": "Invalid input syntax for a field.",
+            },
+            asyncpg.exceptions.PostgresSyntaxError: {
+                "http_status_code": 500,
+                "message": "Something went wrong while processing your request.",
+            },
+            asyncpg.exceptions.NumericValueOutOfRangeError: {
+                "http_status_code": 400,
+                "message": "A numeric value is out of range.",
+            },
+            asyncpg.exceptions.DivisionByZeroError: {
+                "http_status_code": 400,
+                "message": "Attempted division by zero.",
+            },
+            asyncpg.exceptions.StringDataRightTruncationError: {
+                "http_status_code": 400,
+                "message": "Input string is too long for the column.",
+            },
+            asyncpg.exceptions.InvalidDatetimeFormatError: {
+                "http_status_code": 400,
+                "message": "Invalid datetime format.",
+            },
+        }
+
+        for error_type, error_details in specific_errors.items():
+            if isinstance(e, error_type):
+                error_info.update(error_details)
+                return error_info
+
+        # Handle connection errors
+        if isinstance(e, asyncpg.exceptions.ConnectionDoesNotExistError):
+            error_info.update({
+                "http_status_code": 503,
+                "message": "Database connection is not available.",
+            })
         elif isinstance(e, asyncpg.exceptions.ConnectionFailureError):
-            error_info.update(
-                {
-                    "http_status_code": 503,
-                    "message": "Failed to connect to the database.",
-                }
-            )
+            error_info.update({
+                "http_status_code": 503,
+                "message": "Failed to connect to the database.",
+            })
 
         return error_info
 

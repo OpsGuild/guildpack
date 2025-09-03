@@ -25,6 +25,7 @@ packages = [{ include = "oguild", from = "python" }]
 
 [tool.poetry.dependencies]
 python = ">=3.9"
+pydantic = "^2.0.0"
 
 [tool.poetry.extras]
 logstash = ["python-logstash-async"]

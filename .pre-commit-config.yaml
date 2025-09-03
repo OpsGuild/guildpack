@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: test
+        name: Run tests
+        entry: poetry run pytest python/test/ -v
+        language: system
+        pass_filenames: false
+        always_run: true
+      
+      - id: lint
+        name: Run linting
+        entry: poetry run python -m flake8 python/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        language: system
+        pass_filenames: false
+        always_run: true
+      
+      - id: format-check
+        name: Check code formatting
+        entry: poetry run python -m flake8 python/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        language: system
+        pass_filenames: false
+        always_run: true

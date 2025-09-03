@@ -9,7 +9,7 @@ from .file_errors import FileErrorHandler
 
 __all__ = [
     "CommonErrorHandler",
-    "DatabaseErrorHandler", 
+    "DatabaseErrorHandler",
     "ValidationErrorHandler",
     "NetworkErrorHandler",
     "AuthenticationErrorHandler",
