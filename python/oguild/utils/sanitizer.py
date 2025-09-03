@@ -64,7 +64,11 @@ async def sanitize_fields(
             )
             for v in data
         ]
-        return [v for v in sanitized_list if v not in empty_values and v != [] and v != {}]
+        return [
+            v
+            for v in sanitized_list
+            if v not in empty_values and v != [] and v != {}
+        ]
 
     if isinstance(data, UUID):
         return str(data)
