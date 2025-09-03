@@ -1,11 +1,11 @@
-<div align="center">
-  <img src="static/images/logo.png" alt="OpsGuild Logo" width="200">
-</div>
-
                     🚀 Multi-Language Utilities Pack 🚀
                     🐍 Python • 🔷 Node.js • 🦀 Rust • 🐹 Go
                     ☕ Java • 🔵 C# • 🐘 PHP • 🦎 Python
                     📦 Configuration • 🔍 Monitoring • 🛠️ Operations
+
+<div align="center">
+  <img src="static/images/logo.png" alt="OpsGuild Logo" width="100%">
+</div>
 
 # OpsGuild Utilities Pack
 
