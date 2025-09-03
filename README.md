@@ -25,6 +25,8 @@ OpsGuild Pack is a collection of utility libraries designed to solve common deve
 ### Current Components
 
 - **🐍 [Python Logger Package](python/oguild/logs/README.md)** - Enhanced logging, helpers, and utilities
+- **🛡️ [Python Response Package](python/oguild/response/README.md)** - Universal response handling and error management
+- **🔧 [Python Utils Package](python/oguild/utils/README.md)** - Data processing, encoding, and sanitization utilities
 - **🔮 More Coming Soon** - Go, Rust, and other language support planned
 
 ## 📦 Installation
@@ -48,7 +50,7 @@ pip install oguild
 
 ## 🎯 Quick Start
 
-### Python Logger (Current Package)
+### Python Logger
 
 ```python
 from oguild.logs import logger
@@ -62,6 +64,43 @@ logger.debug("Debug information")
 ```
 
 **📖 [Full Python Logger Documentation](python/oguild/logs/README.md)**
+
+### Python Response Handling
+
+```python
+from oguild.response import Ok, Error, police
+
+# Success response
+def get_user(user_id: int):
+    user = {"id": user_id, "name": "John Doe"}
+    return Ok(200, "User retrieved successfully", user)
+
+# Error handling with decorator
+@police(default_msg="Failed to process request", default_code=500)
+def process_data(data):
+    # Your function logic here
+    return processed_data
+```
+
+**📖 [Full Python Response Documentation](python/oguild/response/README.md)**
+
+### Python Utils
+
+```python
+from oguild.utils import encode_json_fields, sanitize_fields
+
+# JSON field processing
+data = [{"id": 1, "metadata": {"key": "value"}}]
+encoded = await encode_json_fields(data, ["metadata"])
+
+# Data sanitization
+clean_data = await sanitize_fields({
+    "id": 1, "name": "John", "email": "", "age": None
+})
+# Result: {"id": 1, "name": "John"} - empty values removed
+```
+
+**📖 [Full Python Utils Documentation](python/oguild/utils/README.md)**
 
 ## 🤝 Contributing
 
@@ -110,6 +149,21 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## 🔄 Changelog
 
+### Version 0.2.0
+
+- **🛡️ Response Module** - Universal response handling and error management
+  - Framework-agnostic error handling (FastAPI, Django, Flask, Starlette)
+  - Smart error classification with specialized handlers
+  - Async/sync support with automatic context detection
+  - Comprehensive logging and stack trace capture
+  - `@police` decorator for automatic error handling
+- **🔧 Utils Module** - Data processing and sanitization utilities
+  - JSON field encoding/decoding for database operations
+  - Advanced data sanitization with customizable rules
+  - Pydantic model integration
+  - Type-safe async operations
+  - Flexible field processors and mapping
+
 ### Version 0.1.4
 
 - Initial release with Python logging utilities
@@ -133,10 +187,13 @@ OpsGuild Pack is designed to solve common development challenges across multiple
 
 ## 🎯 Use Cases
 
-- **Microservices Architecture** - Consistent logging and monitoring across services
+- **Microservices Architecture** - Consistent logging, error handling, and data processing across services
+- **Web API Development** - Universal response handling and error management for any Python framework
+- **Data Processing Pipelines** - JSON encoding/decoding and data sanitization for ETL operations
 - **Polyglot Teams** - Unified utilities regardless of language choice
 - **DevOps & SRE** - Standardized operational tools across infrastructure
-- **Enterprise Development** - Consistent patterns for large-scale applications
+- **Enterprise Development** - Consistent patterns for large-scale applications with robust error handling
+- **Database Operations** - JSON field processing and data normalization for database interactions
 - **Open Source Projects** - Reusable utilities for community projects
 
 ---

@@ -22,8 +22,6 @@ class SmartLogger(logging.Logger):
         if isinstance(msg, str):
             cleaned = self.uuid_pattern.sub(r'"\1"', msg)
 
-            # Try to locate and replace *every* JSON-like dict/list structure
-            # in the string
             def replace_all_json_structures(text):
                 pattern = re.compile(
                     r"""
@@ -129,9 +127,10 @@ class Logger:
         except ValueError:
             raise ValueError(f"Invalid logstash_port: {logstash_port}")
 
-        # Set default log level from environment if not provided
         if log_level is None:
-            log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
+            log_level = getattr(
+                logging, os.getenv("LOG_LEVEL", "INFO").upper()
+            )
 
         if logger_name is None:
             for frame_info in inspect.stack():
