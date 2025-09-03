@@ -27,8 +27,15 @@ async def sanitize_fields(
     """
 
     if isinstance(data, BaseModel):
+        # Use model_dump for Pydantic V2 compatibility
+        try:
+            model_data = data.model_dump(exclude_none=True)
+        except AttributeError:
+            # Fallback for older Pydantic versions
+            model_data = data.dict(exclude_none=True)
+        
         return await sanitize_fields(
-            data.dict(exclude_none=True),
+            model_data,
             empty_values=empty_values,
             key_mapping=key_mapping,
             field_processors=field_processors,
@@ -38,7 +45,13 @@ async def sanitize_fields(
         sanitized = {}
         for key, value in data.items():
             # Check for empty values
-            if value in empty_values or value == [] or value == {}:
+            is_empty = False
+            if isinstance(value, (list, dict)):
+                is_empty = not value  # Empty list or dict
+            else:
+                is_empty = value in empty_values or value == [] or value == {}
+            
+            if is_empty:
                 continue
 
             new_key = key_mapping.get(key, key)
@@ -67,7 +80,10 @@ async def sanitize_fields(
         return [
             v
             for v in sanitized_list
-            if v not in empty_values and v != [] and v != {}
+            if not (
+                (isinstance(v, (list, dict)) and not v) or
+                (not isinstance(v, (list, dict)) and (v in empty_values or v == [] or v == {}))
+            )
         ]
 
     if isinstance(data, UUID):

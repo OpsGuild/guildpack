@@ -115,9 +115,7 @@ class Logger:
         self,
         logger_name: str = None,
         log_file: str = None,
-        log_level: int = getattr(
-            logging, os.getenv("LOG_LEVEL", "INFO").upper()
-        ),
+        log_level: int = None,
         log_format: str = "\n%(levelname)s: (%(name)s) == %(message)s "
         " [%(asctime)s]",
         logstash_host: str = None,
@@ -130,6 +128,10 @@ class Logger:
             )
         except ValueError:
             raise ValueError(f"Invalid logstash_port: {logstash_port}")
+
+        # Set default log level from environment if not provided
+        if log_level is None:
+            log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
 
         if logger_name is None:
             for frame_info in inspect.stack():

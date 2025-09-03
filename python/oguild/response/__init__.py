@@ -3,12 +3,12 @@
 from .errors import (AuthenticationErrorHandler, CommonErrorHandler,
                      DatabaseErrorHandler, FileErrorHandler,
                      NetworkErrorHandler, ValidationErrorHandler)
-from .response import OK, Error, catch_error
+from .response import Ok, Error, police
 
 __all__ = [
-    "OK",
+    "Ok",
     "Error",
-    "catch_error",
+    "police",
     "CommonErrorHandler",
     "DatabaseErrorHandler",
     "ValidationErrorHandler",

@@ -53,7 +53,7 @@ def format_param(param, max_len=300):
     return repr(param)
 
 
-def catch_error(
+def police(
     default_msg: Optional[str] = None, default_code: Optional[int] = None
 ):
     """
@@ -106,7 +106,7 @@ def _log_call(func, args, kwargs):
     logger.debug(f"Calling {full_params}")
 
 
-class OK:
+class Ok:
     """Universal response class that works in sync and async contexts."""
 
     def __init__(
@@ -261,9 +261,9 @@ class Error(Exception):
         if WerkzeugHTTPException:
             import json
 
-            return WerkzeugHTTPException(
-                description=json.dumps(error_dict), code=self.http_status_code
-            )
+            exception = WerkzeugHTTPException(description=json.dumps(error_dict))
+            exception.code = self.http_status_code
+            return exception
 
         return Exception(self.msg)
 
