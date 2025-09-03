@@ -111,9 +111,9 @@ class Ok:
 
     def __init__(
         self,
-        status_code: int = 200,
         message: str = "Success",
         response_dict: Optional[Dict[str, Any]] = None,
+        status_code: int = 200,
         **kwargs: Any,
     ):
         self.status_code = status_code

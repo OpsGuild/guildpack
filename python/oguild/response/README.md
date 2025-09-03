@@ -35,13 +35,13 @@ from oguild.response import Ok, Error, police
 # Success response
 def get_user(user_id: int):
     user = {"id": user_id, "name": "John Doe"}
-    return Ok(200, "User retrieved successfully", user)
+    return Ok("User retrieved successfully", user, status_code=200)
 
 # Error handling
 def get_user_with_error(user_id: int):
     try:
         user = fetch_user(user_id)  # This might fail
-        return Ok(200, "User retrieved successfully", user)
+        return Ok("User retrieved successfully", user, status_code=200)
     except Exception as e:
         raise Error(e, "Failed to retrieve user", 404)
 
@@ -67,7 +67,7 @@ app = FastAPI()
 async def get_user(user_id: int):
     try:
         user = await fetch_user(user_id)
-        return Ok(200, "User found", user)()
+        return Ok("User found", user, status_code=200)()
     except Exception as e:
         raise Error(e, "User not found", 404)
 
@@ -78,7 +78,7 @@ from oguild.response import Ok, Error
 def get_user(request, user_id):
     try:
         user = fetch_user(user_id)
-        return Ok(200, "User found", user).to_framework_response()
+        return Ok("User found", user, status_code=200).to_framework_response()
     except Exception as e:
         raise Error(e, "User not found", 404)
 
@@ -92,7 +92,7 @@ app = Flask(__name__)
 def get_user(user_id):
     try:
         user = fetch_user(user_id)
-        return Ok(200, "User found", user).to_framework_response()
+        return Ok("User found", user, status_code=200).to_framework_response()
     except Exception as e:
         raise Error(e, "User not found", 404)
 ```
@@ -105,9 +105,9 @@ Universal success response class that works across all frameworks.
 
 ```python
 Ok(
-    status_code: int = 200,
-    message: str = "Success", 
+    message: str = "Success",
     response_dict: Optional[Dict[str, Any]] = None,
+    status_code: int = 200,
     **kwargs: Any
 )
 ```
@@ -247,10 +247,10 @@ async def fetch_user_data(user_id: int):
         user = await user_service.get_user(user_id)
         profile = await profile_service.get_profile(user_id)
         
-        return Ok(200, "User data retrieved", {
+        return Ok("User data retrieved", {
             "user": user,
             "profile": profile
-        })
+        }, status_code=200)
     except UserNotFoundError as e:
         raise Error(e, "User not found", 404)
 ```
@@ -275,7 +275,7 @@ import pytest
 from oguild.response import Ok, Error
 
 def test_success_response():
-    response = Ok(200, "Success", {"data": "test"})
+    response = Ok("Success", {"data": "test"}, status_code=200)
     assert response.status_code == 200
     assert response.payload["message"] == "Success"
     assert response.payload["data"] == "test"

@@ -18,10 +18,10 @@ class TestOk:
     def test_ok_custom_initialization(self):
         """Test Ok class with custom parameters."""
         response = Ok(
-            status_code=201,
             message="Created successfully",
             response_dict={"id": 123, "name": "test"},
             extra_field="extra_value",
+            status_code=201,
         )
 
         assert response.status_code == 201

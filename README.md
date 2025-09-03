@@ -1,11 +1,11 @@
+<div align="center">
+  <img src="static/images/logo.png" alt="OpsGuild Logo" width="100%">
+</div>
+
                     🚀 Multi-Language Utilities Pack 🚀
                     🐍 Python • 🔷 Node.js • 🦀 Rust • 🐹 Go
                     ☕ Java • 🔵 C# • 🐘 PHP • 🦎 Python
                     📦 Configuration • 🔍 Monitoring • 🛠️ Operations
-
-<div align="center">
-  <img src="static/images/logo.png" alt="OpsGuild Logo" width="100%">
-</div>
 
 # OpsGuild Utilities Pack
 
@@ -70,7 +70,7 @@ from oguild.response import Ok, Error, police
 # Success response
 def get_user(user_id: int):
     user = {"id": user_id, "name": "John Doe"}
-    return Ok(200, "User retrieved successfully", user)
+    return Ok("User retrieved successfully", user, status_code=200)
 
 # Error handling with decorator
 @police(default_msg="Failed to process request", default_code=500)
