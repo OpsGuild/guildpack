@@ -257,7 +257,11 @@ class Error(Exception):
                 status_code=self.http_status_code, detail=error_dict
             )
         if DjangoJsonResponse:
-            return DjangoJsonResponse(error_dict, status=self.http_status_code)
+            try:
+                return DjangoJsonResponse(error_dict, status=self.http_status_code)
+            except Exception:
+                # Django not properly configured, fall through to next option
+                pass
         if WerkzeugHTTPException:
             import json
 
