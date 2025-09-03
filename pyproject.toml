@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oguild"
-version = "0.1.5"
+version = "0.1.6"
 description = "OGuild utilities — reusable logging and helpers for Python projects"
 readme = "README.md"
 authors = ["Hordunlarmy <Hordunlarmy@gmail.com>"]
@@ -34,6 +34,7 @@ pytest = "^8.4.1"
 pytest-asyncio = "^0.24.0"
 pytest-mock = "^3.12.0"
 pytest-cov = "^5.0.0"
+flake8 = "^7.0.0"
 httpx = "^0.27.0"
 django = ">=4.0,<5.0"
 flask = "^3.1.2"

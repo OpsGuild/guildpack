@@ -1,9 +1,9 @@
-name: Test and Publish to PyPI
+name: Test
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -47,35 +47,3 @@ jobs:
           file: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
-
-  build-and-publish:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Configure Poetry
-        run: poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-
-      - name: Install dependencies
-        run: poetry install --no-interaction --no-root
-
-      - name: Build package
-        run: poetry build
-
-      - name: Publish to PyPI
-        run: poetry publish --no-interaction --skip-existing
-
