@@ -4,7 +4,8 @@ import inspect
 import json
 import sys
 import traceback
-from typing import Any, Callable, Dict, Optional
+from http import HTTPStatus
+from typing import Any, Callable, Dict, List, Optional
 
 from oguild.logs import Logger
 
@@ -123,43 +124,81 @@ def _log_call(func, args, kwargs):
     logger.debug(f"Calling {full_params}")
 
 
-class Ok:
-    """Universal response class that works in sync and async contexts."""
+class Ok(dict):
+    """Universal response class that works in sync and async contexts for multiple frameworks."""
 
-    def __init__(
-        self,
-        message: str = "Success",
-        response_dict: Optional[Dict[str, Any]] = None,
-        status_code: int = 200,
-        **kwargs: Any,
-    ):
-        self.status_code = status_code
-        self.payload: Dict[str, Any] = (
-            dict(response_dict) if response_dict else {}
-        )
-        self.payload.update(kwargs)
-        self.payload.setdefault("message", message)
-        self.payload.setdefault("status_code", self.status_code)
+    def __init__(self, *args: Any, **kwargs: Any):
+        # Defaults
+        status_code: int = 200
+        message: str = ""
+        data: Optional[Any] = None
+        extras: List[Any] = []
 
+        # Extract from kwargs
+        if "status_code" in kwargs:
+            status_code = kwargs.pop("status_code")
+        if "message" in kwargs:
+            message = kwargs.pop("message")
+        if "data" in kwargs:
+            data = kwargs.pop("data")
+
+        # Process positional args
+        for arg in args:
+            if isinstance(arg, int):
+                status_code = arg
+            elif isinstance(arg, str) and not message:
+                message = arg
+            elif data is None:
+                data = arg
+            else:
+                extras.append(arg)
+
+        # Fallback message from HTTPStatus
+        if not message:
+            try:
+                message = HTTPStatus(status_code).phrase
+            except ValueError:
+                message = "Success"
+
+        # Build base dict
+        response: Dict[str, Any] = {
+            "status_code": status_code,
+            "message": message,
+        }
+
+        if data not in (None, {}, [], ()):
+            response["data"] = list(data) if isinstance(data, tuple) else data
+
+        if extras:
+            response["extras"] = extras
+
+        if kwargs:
+            response.update(kwargs)
+
+        # Initialize as dict
+        super().__init__(response)
+
+        # Keep attributes for framework responses
+        self._status_code = status_code
+
+    # Framework-specific responses
     def to_framework_response(self):
-        """Convert to framework-specific response."""
-        response = {**self.payload}
-
+        response = dict(self)
         try:
             if FastAPIJSONResponse:
                 return FastAPIJSONResponse(
-                    content=response, status_code=self.status_code
+                    content=response, status_code=self._status_code
                 )
             if StarletteJSONResponse:
                 return StarletteJSONResponse(
-                    content=response, status_code=self.status_code
+                    content=response, status_code=self._status_code
                 )
             if DjangoJsonResponse:
-                return DjangoJsonResponse(response, status=self.status_code)
+                return DjangoJsonResponse(response, status=self._status_code)
             if FlaskResponse:
                 return FlaskResponse(
                     json.dumps(response),
-                    status=self.status_code,
+                    status=self._status_code,
                     mimetype="application/json",
                 )
             return response
@@ -167,7 +206,7 @@ class Ok:
             return response
 
     def __call__(self):
-        """Auto-detect sync vs async context."""
+        """Return framework response in sync context."""
         try:
             asyncio.get_running_loop()
             return self._async_call()

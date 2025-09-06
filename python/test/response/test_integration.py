@@ -13,8 +13,8 @@ class TestResponseIntegration:
             message="User created successfully", user_id=123, status_code=201
         )
 
-        assert success_response.status_code == 201
-        assert success_response.payload["user_id"] == 123
+        assert success_response._status_code == 201
+        assert success_response["user_id"] == 123
 
         try:
             raise ValueError("Invalid user data")
@@ -41,7 +41,7 @@ class TestResponseIntegration:
 
         result = await async_operation(True)
         assert isinstance(result, Ok)
-        assert result.payload["message"] == "Async operation successful"
+        assert result["message"] == "Async operation successful"
 
         with pytest.raises(Exception):
             await async_operation(False)

@@ -11,44 +11,69 @@ class TestOk:
         """Test Ok class with default parameters."""
         response = Ok()
 
-        assert response.status_code == 200
-        assert response.payload["message"] == "Success"
-        assert response.payload["status_code"] == 200
+        assert response._status_code == 200
+        assert response["message"] == "OK"
+        assert response["status_code"] == 200
+        # Should not include data or _extra when not provided
+        assert "data" not in response
+        assert "_extra" not in response
 
     def test_ok_custom_initialization(self):
         """Test Ok class with custom parameters."""
         response = Ok(
             message="Created successfully",
-            response_dict={"id": 123, "name": "test"},
+            data={"id": 123, "name": "test"},
             extra_field="extra_value",
             status_code=201,
         )
 
-        assert response.status_code == 201
-        assert response.payload["message"] == "Created successfully"
-        assert response.payload["status_code"] == 201
-        assert response.payload["id"] == 123
-        assert response.payload["name"] == "test"
-        assert response.payload["extra_field"] == "extra_value"
+        assert response._status_code == 201
+        assert response["message"] == "Created successfully"
+        assert response["status_code"] == 201
+        assert response["data"]["id"] == 123
+        assert response["data"]["name"] == "test"
+        assert response["extra_field"] == "extra_value"
 
     def test_ok_with_kwargs_only(self):
         """Test Ok class with only kwargs."""
         response = Ok(data=[1, 2, 3], count=3)
 
-        assert response.status_code == 200
-        assert response.payload["message"] == "Success"
-        assert response.payload["data"] == [1, 2, 3]
-        assert response.payload["count"] == 3
+        assert response._status_code == 200
+        assert response["message"] == "OK"
+        assert response["data"] == [1, 2, 3]
+        assert response["count"] == 3
 
-    def test_ok_with_response_dict_and_kwargs(self):
-        """Test Ok class with both response_dict and kwargs."""
+    def test_ok_with_data_and_kwargs(self):
+        """Test Ok class with both data and kwargs."""
         response = Ok(
-            response_dict={"existing": "value"}, new_field="new_value"
+            data={"existing": "value"}, new_field="new_value"
         )
 
-        assert response.payload["existing"] == "value"
-        assert response.payload["new_field"] == "new_value"
-        assert response.payload["message"] == "Success"
+        assert response["data"]["existing"] == "value"
+        assert response["new_field"] == "new_value"
+        assert response["message"] == "OK"
+
+    def test_ok_with_null_data_and_empty_extra(self):
+        """Test Ok class with null data and empty extra fields."""
+        response = Ok(message="Created", data=None, status_code=201)
+        
+        result = dict(response)
+        assert result["message"] == "Created"
+        assert result["status_code"] == 201
+        # Should not include data when it's None
+        assert "data" not in result
+        # Should not include _extra when it's empty
+        assert "_extra" not in result
+
+    def test_ok_with_empty_extra_fields(self):
+        """Test Ok class with empty extra fields should not include _extra."""
+        response = Ok(message="Test", status_code=200)
+        
+        result = dict(response)
+        assert result["message"] == "Test"
+        assert result["status_code"] == 200
+        # Should not include _extra when it's empty
+        assert "_extra" not in result
 
     def test_ok_to_framework_response_fastapi(self):
         """Test Ok to_framework_response with FastAPI."""
@@ -60,7 +85,7 @@ class TestOk:
             from starlette.responses import JSONResponse
             assert isinstance(result, JSONResponse)
             assert result.status_code == 201
-            assert result.body == b'{"message":"Test","status_code":201}'
+            assert result.body == b'{"status_code":201,"message":"Test"}'
         except ImportError:
             # If Starlette not available, should fall back to other framework
             assert hasattr(result, 'status_code') or isinstance(result, dict)
@@ -78,7 +103,7 @@ class TestOk:
                 assert result.status_code == 202
                 assert (
                     result.body
-                    == b'{"message":"Test Starlette","status_code":202}'
+                    == b'{"status_code":202,"message":"Test Starlette"}'
                 )
             except ImportError:
                 # If Starlette not available, should fall back to other framework
@@ -152,7 +177,7 @@ class TestOk:
             response = Ok(message="Test Fallback", status_code=205)
             result = response.to_framework_response()
 
-            assert result == response.payload
+            assert result == dict(response)
             assert result["message"] == "Test Fallback"
             assert result["status_code"] == 205
 
@@ -166,7 +191,7 @@ class TestOk:
             response = Ok(message="Test Exception", status_code=206)
             result = response.to_framework_response()
 
-            assert result == response.payload
+            assert result == dict(response)
             assert result["message"] == "Test Exception"
             assert result["status_code"] == 206
 

@@ -104,18 +104,89 @@ def get_user(user_id):
 
 ### Ok Class
 
-Universal success response class that works across all frameworks.
+Universal success response class that works across all frameworks. The Ok class is highly flexible and supports multiple usage patterns.
+
+#### Constructor Signature
 
 ```python
-Ok(
-    message: str = "Success",
-    response_dict: Optional[Dict[str, Any]] = None,
-    status_code: int = 200,
-    **kwargs: Any
-)
+Ok(*args: Any, **kwargs: Any)
 ```
 
-**Methods:**
+The Ok class accepts any number of positional arguments and keyword arguments, automatically detecting their types and assigning them appropriately.
+
+#### Usage Patterns
+
+The Ok class supports multiple flexible usage patterns:
+
+**1. Status Code Only**
+```python
+return Ok(201)  # Returns: {"status_code": 201, "message": "Created"}
+```
+
+**2. Message Only**
+```python
+return Ok("login successful")  # Returns: {"status_code": 200, "message": "login successful"}
+```
+
+**3. Data Only**
+```python
+result = {"user_id": 123, "name": "John Doe"}
+return Ok(result)  # Returns: {"status_code": 200, "message": "OK", "data": result}
+```
+
+**4. Complete Response with All Parameters**
+```python
+result = {"user_id": 123, "name": "John Doe"}
+session_data = {"token": "abc123", "expires": "2024-01-01"}
+return Ok(result, 201, "Login successful", {"session": session_data})
+# Returns: {
+#   "status_code": 201, 
+#   "message": "Login successful", 
+#   "data": result, 
+#   "extras": [{"session": session_data}]
+# }
+```
+
+**5. Using Keyword Arguments**
+```python
+result = {"user_id": 123, "name": "John Doe"}
+session_data = {"token": "abc123", "expires": "2024-01-01"}
+return Ok(result, 201, "Login successful", meta={"session": session_data})
+# Returns: {
+#   "status_code": 201, 
+#   "message": "Login successful", 
+#   "data": result, 
+#   "meta": {"session": session_data}
+# }
+```
+
+**6. Using Named Parameters**
+```python
+return Ok(
+    data={"user_id": 123, "name": "John Doe"},
+    status_code=201,
+    message="User created successfully",
+    session="abc123"
+)
+# Returns: {
+#   "status_code": 201, 
+#   "message": "User created successfully", 
+#   "data": {"user_id": 123, "name": "John Doe"},
+#   "session": "abc123"
+# }
+```
+
+#### Parameter Detection Logic
+
+The Ok class intelligently detects parameter types:
+
+- **Integer**: Treated as `status_code`
+- **String**: Treated as `message` (if no message set yet)
+- **Dictionary/List/Tuple**: Treated as `data` (if no data set yet)
+- **Additional arguments**: Added to `extras` list
+- **Keyword arguments**: Added directly to the response
+
+#### Methods
 
 - `to_framework_response()` - Convert to framework-specific response
 - `__call__()` - Auto-detect sync/async context and return appropriate response

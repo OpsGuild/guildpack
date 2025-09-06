@@ -144,15 +144,19 @@ class DatabaseErrorHandler:
 
         # Handle connection errors
         if isinstance(e, asyncpg.exceptions.ConnectionDoesNotExistError):
-            error_info.update({
-                "http_status_code": 503,
-                "message": "Database connection is not available.",
-            })
+            error_info.update(
+                {
+                    "http_status_code": 503,
+                    "message": "Database connection is not available.",
+                }
+            )
         elif isinstance(e, asyncpg.exceptions.ConnectionFailureError):
-            error_info.update({
-                "http_status_code": 503,
-                "message": "Failed to connect to the database.",
-            })
+            error_info.update(
+                {
+                    "http_status_code": 503,
+                    "message": "Failed to connect to the database.",
+                }
+            )
 
         return error_info
 
