@@ -37,13 +37,16 @@ def get_user(user_id: int):
     user = {"id": user_id, "name": "John Doe"}
     return Ok("User retrieved successfully", user, status_code=200)
 
-# Error handling
+# Error handling - both patterns work
 def get_user_with_error(user_id: int):
     try:
         user = fetch_user(user_id)  # This might fail
         return Ok("User retrieved successfully", user, status_code=200)
     except Exception as e:
         raise Error(e, "Failed to retrieve user", 404)
+    # OR alternatively:
+    # except Exception:
+    #     raise Error("Failed to retrieve user", 404)
 
 # Using the police decorator
 @police(default_msg="Failed to process request", default_code=500)
@@ -113,13 +116,14 @@ Ok(
 ```
 
 **Methods:**
+
 - `to_framework_response()` - Convert to framework-specific response
 - `__call__()` - Auto-detect sync/async context and return appropriate response
 - `__await__()` - Async context support
 
 ### Error Class
 
-Comprehensive error handling with automatic classification.
+Comprehensive error handling with automatic classification and exception detection.
 
 ```python
 Error(
@@ -131,7 +135,27 @@ Error(
 )
 ```
 
+**Automatic Exception Detection:**
+When no exception is provided (`e=None`), the Error class automatically detects the current exception using `sys.exc_info()`. This provides flexibility in how you handle exceptions:
+
+```python
+# Option 1: Explicit exception passing (always works)
+try:
+    risky_operation()
+except Exception as e:
+    raise Error(e, "Operation failed", 500)
+
+# Option 2: Automatic exception detection (cleaner syntax)
+try:
+    risky_operation()
+except Exception:
+    raise Error("Operation failed", 500)
+
+# Both approaches preserve the original exception details for logging and debugging
+```
+
 **Methods:**
+
 - `to_dict()` - Convert error to dictionary with logging
 - `to_framework_exception()` - Convert to framework-specific exception
 - `__call__()` - Raise framework-specific exception
@@ -153,9 +177,11 @@ def your_function():
 The response system includes specialized error handlers for different types of errors:
 
 ### CommonErrorHandler
+
 Handles standard Python exceptions and framework-specific errors:
+
 - `ValueError` → 400 Bad Request
-- `TypeError` → 400 Bad Request  
+- `TypeError` → 400 Bad Request
 - `KeyError` → 400 Bad Request
 - `PermissionError` → 403 Forbidden
 - `FileNotFoundError` → 404 Not Found
@@ -163,36 +189,91 @@ Handles standard Python exceptions and framework-specific errors:
 - `ConnectionError` → 503 Service Unavailable
 
 ### DatabaseErrorHandler
+
 Handles database-related errors:
+
 - SQLAlchemy exceptions
 - Database connection errors
 - Query execution errors
 
 ### ValidationErrorHandler
+
 Handles data validation errors:
+
 - Pydantic validation errors
 - Schema validation errors
 - Input validation errors
 
 ### AuthenticationErrorHandler
+
 Handles authentication and authorization errors:
+
 - JWT token errors
 - Permission denied errors
 - Authentication failures
 
 ### NetworkErrorHandler
+
 Handles network-related errors:
+
 - HTTP request errors
 - API communication errors
 - Network connectivity issues
 
 ### FileErrorHandler
+
 Handles file system errors:
+
 - File I/O errors
 - File permission errors
 - File format errors
 
 ## 📝 Examples
+
+### Automatic Exception Detection
+
+The Error class now automatically detects exceptions when none are explicitly provided, giving you flexibility in how you handle exceptions:
+
+```python
+from oguild.response import Error
+
+def divide_numbers(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError as e:
+        raise Error(e, "Cannot divide by zero", 400)
+    except TypeError as e:
+        raise Error(e, "Invalid number types", 400)
+    except Exception as e:
+        raise Error(e, "Unexpected calculation error", 500)
+
+# OR using automatic detection (cleaner syntax):
+def divide_numbers_auto(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        raise Error("Cannot divide by zero", 400)
+    except TypeError:
+        raise Error("Invalid number types", 400)
+    except Exception:
+        raise Error("Unexpected calculation error", 500)
+
+# OR use with default error message
+def divide_numbers_auto(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        raise Error
+    except TypeError:
+        raise Error
+    except Exception:
+        raise Error
+
+# All approaches preserve the original exception details
+# including the original exception type, message, and stack trace
+```
+
+Choose the pattern that fits your coding style - both work identically!
 
 ### Advanced Error Handling
 
@@ -209,7 +290,7 @@ async def create_user(user_data: dict):
         # This will be handled by ValidationErrorHandler
         raise Error(e, "Invalid user data", 400)
     except DatabaseError as e:
-        # This will be handled by DatabaseErrorHandler  
+        # This will be handled by DatabaseErrorHandler
         raise Error(e, "Database error occurred", 500)
 ```
 
@@ -224,9 +305,9 @@ def process_payment(amount: float):
         return result
     except PaymentError as e:
         raise Error(
-            e,
-            "Payment processing failed",
-            402,  # Payment Required
+            e=e,
+            msg="Payment processing failed",
+            code=402,  # Payment Required
             level="WARNING",
             additional_info={
                 "amount": amount,
@@ -246,13 +327,109 @@ async def fetch_user_data(user_id: int):
     try:
         user = await user_service.get_user(user_id)
         profile = await profile_service.get_profile(user_id)
-        
+
         return Ok("User data retrieved", {
             "user": user,
             "profile": profile
         }, status_code=200)
     except UserNotFoundError as e:
         raise Error(e, "User not found", 404)
+```
+
+## 🔧 Framework-Specific Response Handling
+
+### FastAPI Detail Key Wrapping
+
+FastAPI automatically wraps error responses in a `detail` key. To unwrap this automatically and return your custom error structure directly, you can override FastAPI's default exception handler:
+
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from oguild.response import Error
+
+app = FastAPI()
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if isinstance(exc.detail, dict):  # unwrap dict passed into detail
+        return JSONResponse(content=exc.detail, status_code=exc.status_code)
+    return JSONResponse(
+        content={"message": str(exc.detail)},
+        status_code=exc.status_code,
+    )
+
+# Now your Error responses will be returned directly without the detail wrapper
+@app.get("/users/{user_id}")
+async def get_user(user_id: int):
+    try:
+        user = await fetch_user(user_id)
+        return Ok("User found", user, status_code=200)()
+    except Exception as e:
+        raise Error(e, "User not found", 404)
+```
+
+### Django Custom Error Handling
+
+Django doesn't wrap responses by default, but you can create custom middleware for consistent error formatting:
+
+```python
+from django.http import JsonResponse
+from django.utils.deprecation import MiddlewareMixin
+from oguild.response import Error
+
+class CustomErrorMiddleware(MiddlewareMixin):
+    def process_exception(self, request, exception):
+        if isinstance(exception, Error):
+            error_dict = exception.to_dict()
+            return JsonResponse(error_dict, status=exception.http_status_code)
+        return None
+```
+
+### Flask Custom Error Handlers
+
+Flask allows you to register custom error handlers for consistent response formatting:
+
+```python
+from flask import Flask, jsonify
+from oguild.response import Error
+
+app = Flask(__name__)
+
+@app.errorhandler(Error)
+def handle_custom_error(error):
+    return jsonify(error.to_dict()), error.http_status_code
+
+@app.errorhandler(Exception)
+def handle_generic_error(error):
+    custom_error = Error(error, "Internal server error", 500)
+    return jsonify(custom_error.to_dict()), 500
+```
+
+### Starlette Custom Exception Handler
+
+For pure Starlette applications, you can add a custom exception handler:
+
+```python
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from oguild.response import Error
+
+async def custom_exception_handler(request, exc):
+    if isinstance(exc, StarletteHTTPException) and isinstance(exc.detail, dict):
+        return JSONResponse(content=exc.detail, status_code=exc.status_code)
+    elif isinstance(exc, Error):
+        return JSONResponse(content=exc.to_dict(), status_code=exc.http_status_code)
+    return JSONResponse(
+        content={"message": str(exc.detail) if hasattr(exc, 'detail') else str(exc)},
+        status_code=getattr(exc, 'status_code', 500)
+    )
+
+app = Starlette(exception_handlers={
+    StarletteHTTPException: custom_exception_handler,
+    Error: custom_exception_handler,
+})
 ```
 
 ## 🔍 Logging

@@ -2,6 +2,7 @@ import asyncio
 import functools
 import inspect
 import json
+import sys
 import traceback
 from typing import Any, Callable, Dict, Optional
 
@@ -204,6 +205,11 @@ class Error(Exception):
         additional_info: Optional[dict] = None,
         _raise_immediately: bool = True,
     ):
+        if e is None:
+            exc_type, exc_value, _ = sys.exc_info()
+            if exc_value is not None:
+                e = exc_value
+
         self.e = e
         self.msg = msg or "Unknown server error."
         self.http_status_code = code or 500
