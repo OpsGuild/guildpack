@@ -13,8 +13,19 @@ class TestResponseIntegration:
             message="User created successfully", user_id=123, status_code=201
         )
 
-        assert success_response._status_code == 201
-        assert success_response["user_id"] == 123
+        # Ok returns a framework response, check its properties
+        assert success_response.status_code == 201
+        
+        # Check content
+        import json
+        if hasattr(success_response, 'body'):
+            content = json.loads(success_response.body.decode('utf-8'))
+        elif hasattr(success_response, 'content'):
+            content = json.loads(success_response.content.decode('utf-8'))
+        else:
+            content = success_response  # fallback case
+        
+        assert content["user_id"] == 123
 
         try:
             raise ValueError("Invalid user data")
@@ -40,8 +51,19 @@ class TestResponseIntegration:
                 raise RuntimeError("Async operation failed")
 
         result = await async_operation(True)
-        assert isinstance(result, Ok)
-        assert result["message"] == "Async operation successful"
+        # Ok returns a framework response, not an Ok instance
+        assert hasattr(result, 'status_code')
+        
+        # Check content
+        import json
+        if hasattr(result, 'body'):
+            content = json.loads(result.body.decode('utf-8'))
+        elif hasattr(result, 'content'):
+            content = json.loads(result.content.decode('utf-8'))
+        else:
+            content = result  # fallback case
+        
+        assert content["message"] == "Async operation successful"
 
         with pytest.raises(Exception):
             await async_operation(False)
@@ -50,12 +72,9 @@ class TestResponseIntegration:
         """Test framework compatibility for both Ok and Error."""
         ok_response = Ok(message="Test")
 
-        with patch(
-            "oguild.response.response.FastAPIJSONResponse"
-        ) as mock_fastapi:
-            mock_fastapi.return_value = "fastapi_ok"
-            result = ok_response.to_framework_response()
-            assert result == "fastapi_ok"
+        # Ok directly returns a framework response, no need for to_framework_response
+        assert hasattr(ok_response, 'status_code')
+        assert ok_response.status_code == 200
 
         error_response = Error(msg="Test error", code=400, _raise_immediately=False)
 

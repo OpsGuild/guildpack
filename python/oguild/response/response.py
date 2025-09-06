@@ -17,10 +17,12 @@ logger = Logger("response").get_logger()
 
 try:
     from fastapi import HTTPException as FastAPIHTTPException
+    from fastapi.encoders import jsonable_encoder
     from fastapi.responses import JSONResponse as FastAPIJSONResponse
 except ImportError:
     FastAPIJSONResponse = None
     FastAPIHTTPException = None
+    jsonable_encoder = None
 
 try:
     from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -124,100 +126,97 @@ def _log_call(func, args, kwargs):
     logger.debug(f"Calling {full_params}")
 
 
-class Ok(dict):
-    """Universal response class that works in sync and async contexts for multiple frameworks."""
+def _default_encoder(obj: Any):
+    import dataclasses
+    import datetime
+    import uuid
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        # Defaults
-        status_code: int = 200
-        message: str = ""
-        data: Optional[Any] = None
+    if isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    if isinstance(obj, uuid.UUID):
+        return str(obj)
+    if dataclasses.is_dataclass(obj):
+        return dataclasses.asdict(obj)
+    if hasattr(obj, "dict"):  # Pydantic v1
+        return obj.dict()
+    if hasattr(obj, "model_dump"):  # Pydantic v2
+        return obj.model_dump()
+    return str(obj)
+
+
+class Ok:
+    """
+    Return a framework-native JSON response with the correct HTTP status code.
+    Usage:
+        return Ok(201)
+        return Ok(201, "Created", {"id": 1})
+        return Ok("Login successful", 201, user)
+        return Ok(message="Done", status_code=200, data=user, foo="bar")
+    """
+
+    def __new__(cls, *args: Any, **kwargs: Any):
+        status_code: int = kwargs.pop("status_code", 200)
+        message: Optional[str] = kwargs.pop("message", None)
+        data: Optional[Any] = kwargs.pop("data", None)
         extras: List[Any] = []
 
-        # Extract from kwargs
-        if "status_code" in kwargs:
-            status_code = kwargs.pop("status_code")
-        if "message" in kwargs:
-            message = kwargs.pop("message")
-        if "data" in kwargs:
-            data = kwargs.pop("data")
-
-        # Process positional args
+        # Positional parsing
         for arg in args:
             if isinstance(arg, int):
                 status_code = arg
-            elif isinstance(arg, str) and not message:
+            elif isinstance(arg, str) and message is None:
                 message = arg
             elif data is None:
                 data = arg
             else:
                 extras.append(arg)
 
-        # Fallback message from HTTPStatus
         if not message:
             try:
                 message = HTTPStatus(status_code).phrase
-            except ValueError:
+            except Exception:
                 message = "Success"
 
-        # Build base dict
-        response: Dict[str, Any] = {
+        payload: Dict[str, Any] = {
             "status_code": status_code,
             "message": message,
         }
 
-        if data not in (None, {}, [], ()):
-            response["data"] = list(data) if isinstance(data, tuple) else data
+        if data not in (None, {}, [], (), ""):
+            payload["data"] = list(data) if isinstance(data, tuple) else data
 
         if extras:
-            response["extras"] = extras
+            payload["extras"] = extras
 
         if kwargs:
-            response.update(kwargs)
+            payload.update(kwargs)
 
-        # Initialize as dict
-        super().__init__(response)
+        if jsonable_encoder:
+            payload = jsonable_encoder(payload)
+        else:
+            payload = json.loads(json.dumps(payload, default=_default_encoder))
 
-        # Keep attributes for framework responses
-        self._status_code = status_code
+        if FastAPIJSONResponse is not None:
+            return FastAPIJSONResponse(
+                content=payload, status_code=status_code
+            )
 
-    # Framework-specific responses
-    def to_framework_response(self):
-        response = dict(self)
-        try:
-            if FastAPIJSONResponse:
-                return FastAPIJSONResponse(
-                    content=response, status_code=self._status_code
-                )
-            if StarletteJSONResponse:
-                return StarletteJSONResponse(
-                    content=response, status_code=self._status_code
-                )
-            if DjangoJsonResponse:
-                return DjangoJsonResponse(response, status=self._status_code)
-            if FlaskResponse:
-                return FlaskResponse(
-                    json.dumps(response),
-                    status=self._status_code,
-                    mimetype="application/json",
-                )
-            return response
-        except Exception:
-            return response
+        if StarletteJSONResponse is not None:
+            return StarletteJSONResponse(
+                content=payload, status_code=status_code
+            )
 
-    def __call__(self):
-        """Return framework response in sync context."""
-        try:
-            asyncio.get_running_loop()
-            return self._async_call()
-        except RuntimeError:
-            return self.to_framework_response()
+        if DjangoJsonResponse is not None:
+            return DjangoJsonResponse(payload, status=status_code)
 
-    async def _async_call(self):
-        return self.to_framework_response()
+        if FlaskResponse is not None:
+            return FlaskResponse(
+                json.dumps(payload, default=_default_encoder),
+                status=status_code,
+                mimetype="application/json",
+            )
 
-    def __await__(self):
-        return self._async_call().__await__()
+        return payload
 
 
 class Error(Exception):
@@ -267,7 +266,6 @@ class Error(Exception):
         if e:
             self._handle_error_with_handlers(e)
 
-        # If this Error is being raised (not just created for testing), raise the framework exception
         if _raise_immediately:
             raise self.to_framework_exception()
 
