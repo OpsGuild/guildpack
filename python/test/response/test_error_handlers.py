@@ -13,7 +13,7 @@ class TestErrorHandlers:
 
     def test_error_handlers_initialization(self):
         """Test that error handlers are properly initialized."""
-        error = Error()
+        error = Error(_raise_immediately=False)
 
         assert isinstance(error.common_handler, CommonErrorHandler)
         assert isinstance(error.database_handler, DatabaseErrorHandler)
@@ -32,7 +32,7 @@ class TestErrorHandlers:
                 'connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused'
             )
 
-            error = Error(e=db_error)
+            error = Error(e=db_error, _raise_immediately=False)
 
             assert (
                 "Database error occurred" in error.msg
@@ -55,7 +55,7 @@ class TestErrorHandlers:
                 'connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused'
             )
 
-            error = Error(e=db_error)
+            error = Error(e=db_error, _raise_immediately=False)
 
             assert any(
                 keyword in error.msg.lower()
@@ -80,7 +80,7 @@ class TestErrorHandlers:
                 'connection to server at "localhost" (127.0.0.1), port 27017 failed: Connection refused'
             )
 
-            error = Error(e=db_error)
+            error = Error(e=db_error, _raise_immediately=False)
 
             assert any(
                 keyword in error.msg.lower()
@@ -105,7 +105,7 @@ class TestErrorHandlers:
                 "Error connecting to Redis at localhost:6379"
             )
 
-            error = Error(e=db_error)
+            error = Error(e=db_error, _raise_immediately=False)
 
             assert any(
                 keyword in error.msg.lower()
@@ -138,7 +138,7 @@ class TestErrorHandlers:
                 "level": "WARNING",
             }
 
-            error = Error(e=validation_error)
+            error = Error(e=validation_error, _raise_immediately=False)
 
             assert error.msg == "Validation failed"
             assert error.http_status_code == 400
@@ -151,7 +151,7 @@ class TestErrorHandlers:
 
             network_error = requests.ConnectionError("Connection refused")
 
-            error = Error(e=network_error)
+            error = Error(e=network_error, _raise_immediately=False)
 
             assert (
                 "Network error occurred" in error.msg
@@ -173,7 +173,7 @@ class TestErrorHandlers:
 
             network_error = aiohttp.ClientConnectionError("Connection refused")
 
-            error = Error(e=network_error)
+            error = Error(e=network_error, _raise_immediately=False)
 
             assert (
                 "Network error occurred" in error.msg
@@ -191,7 +191,7 @@ class TestErrorHandlers:
 
             network_error = httpx.ConnectError("Connection refused")
 
-            error = Error(e=network_error)
+            error = Error(e=network_error, _raise_immediately=False)
 
             assert (
                 "Network error occurred" in error.msg
@@ -225,7 +225,7 @@ class TestErrorHandlers:
                 "level": "ERROR",
             }
 
-            error = Error(e=unknown_error)
+            error = Error(e=unknown_error, _raise_immediately=False)
 
             assert error.msg == "Internal server error"
             assert error.http_status_code == 500
@@ -238,7 +238,7 @@ class TestErrorHandlers:
 
             auth_error = jwt.ExpiredSignatureError("Token has expired")
 
-            error = Error(e=auth_error)
+            error = Error(e=auth_error, _raise_immediately=False)
 
             assert (
                 "Authentication token has expired" in error.msg
@@ -258,7 +258,7 @@ class TestErrorHandlers:
                 "Invalid client credentials"
             )
 
-            error = Error(e=auth_error)
+            error = Error(e=auth_error, _raise_immediately=False)
 
             assert (
                 "Invalid client credentials" in error.msg
@@ -278,7 +278,7 @@ class TestErrorHandlers:
                 "Invalid client credentials"
             )
 
-            error = Error(e=auth_error)
+            error = Error(e=auth_error, _raise_immediately=False)
 
             assert (
                 "Invalid client credentials" in error.msg
@@ -296,7 +296,7 @@ class TestErrorHandlers:
 
             file_error = minio.error.MinioException("Access denied")
 
-            error = Error(e=file_error)
+            error = Error(e=file_error, _raise_immediately=False)
 
             assert any(
                 keyword in error.msg.lower()

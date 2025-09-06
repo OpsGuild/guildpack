@@ -54,10 +54,19 @@ def format_param(param, max_len=300):
 
 
 def police(
-    default_msg: Optional[str] = None, default_code: Optional[int] = None
+    _func: Optional[Callable] = None,
+    *,
+    default_msg: Optional[str] = None,
+    default_code: Optional[int] = None,
 ):
     """
     Decorator to catch and format errors for sync or async functions.
+    Can be used with or without parentheses:
+        @police
+        def foo(): ...
+
+        @police(default_msg="Custom", default_code=400)
+        def bar(): ...
     """
 
     def decorator(func: Callable):
@@ -69,11 +78,13 @@ def police(
             try:
                 return await func(*args, **kwargs)
             except Exception as e:
-                raise Error(
+                error = Error(
                     e,
                     msg=default_msg or f"Unexpected error in {func.__name__}",
                     code=default_code or 500,
+                    _raise_immediately=False,
                 )
+                raise error.to_framework_exception()
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -81,13 +92,18 @@ def police(
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                raise Error(
+                error = Error(
                     e,
                     msg=default_msg or f"Unexpected error in {func.__name__}",
                     code=default_code or 500,
+                    _raise_immediately=False,
                 )
+                raise error.to_framework_exception()
 
         return async_wrapper if is_coroutine else sync_wrapper
+
+    if _func is not None and callable(_func):
+        return decorator(_func)
 
     return decorator
 
@@ -167,6 +183,18 @@ class Ok:
 class Error(Exception):
     """Error response class with multi-framework support."""
 
+    def __new__(
+        cls,
+        e: Optional[Exception] = None,
+        msg: Optional[str] = None,
+        code: Optional[int] = None,
+        level: Optional[str] = None,
+        additional_info: Optional[dict] = None,
+        _raise_immediately: bool = True,
+    ):
+        instance = super().__new__(cls)
+        return instance
+
     def __init__(
         self,
         e: Optional[Exception] = None,
@@ -174,6 +202,7 @@ class Error(Exception):
         code: Optional[int] = None,
         level: Optional[str] = None,
         additional_info: Optional[dict] = None,
+        _raise_immediately: bool = True,
     ):
         self.e = e
         self.msg = msg or "Unknown server error."
@@ -182,7 +211,7 @@ class Error(Exception):
         self.additional_info = additional_info or {}
         self.logger = Logger(str(self.http_status_code)).get_logger()
 
-        # Initialize error handlers
+        # Handlers
         self.common_handler = CommonErrorHandler(self.logger)
         self.database_handler = DatabaseErrorHandler(self.logger)
         self.validation_handler = ValidationErrorHandler(self.logger)
@@ -193,10 +222,11 @@ class Error(Exception):
         if e:
             self._handle_error_with_handlers(e)
 
-        super().__init__(self.msg)
+        # If this Error is being raised (not just created for testing), raise the framework exception
+        if _raise_immediately:
+            raise self.to_framework_exception()
 
     def _handle_error_with_handlers(self, e: Exception):
-        """Use specialized error handlers to determine message and code."""
         if self.database_handler._is_database_error(e):
             info = self.database_handler.handle_error(e)
         elif self.validation_handler._is_validation_error(e):
@@ -217,11 +247,9 @@ class Error(Exception):
         self.msg = info.get("message", self.msg)
 
     def to_dict(self):
-        """Convert error to dict, logging stack trace."""
         if self.e:
             self.logger.debug(
-                f"Error attributes: "
-                f"{self.common_handler.get_exception_attributes(self.e)}"
+                f"Error attributes: {self.common_handler.get_exception_attributes(self.e)}"
             )
             self.logger.debug(
                 "Stack trace:\n"
@@ -245,7 +273,6 @@ class Error(Exception):
         }
 
     def to_framework_exception(self):
-        """Convert to framework-specific HTTP exception."""
         error_dict = self.to_dict()
 
         if FastAPIHTTPException:
@@ -258,21 +285,26 @@ class Error(Exception):
             )
         if DjangoJsonResponse:
             try:
-                return DjangoJsonResponse(error_dict, status=self.http_status_code)
+                return DjangoJsonResponse(
+                    error_dict, status=self.http_status_code
+                )
             except Exception:
-                # Django not properly configured, fall through to next option
                 pass
         if WerkzeugHTTPException:
             import json
 
-            exception = WerkzeugHTTPException(description=json.dumps(error_dict))
+            exception = WerkzeugHTTPException(
+                description=json.dumps(error_dict)
+            )
             exception.code = self.http_status_code
             return exception
 
         return Exception(self.msg)
 
     def __call__(self):
+        """Make Error callable by raising the framework exception."""
         raise self.to_framework_exception()
 
     def __await__(self):
+        """Make Error awaitable by raising the framework exception."""
         raise self.to_framework_exception()

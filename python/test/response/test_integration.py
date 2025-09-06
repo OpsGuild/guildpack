@@ -21,7 +21,7 @@ class TestResponseIntegration:
         except ValueError as e:
             with patch.object(Error, "_handle_error_with_handlers"):
                 error_response = Error(
-                    e=e, msg="Failed to create user", code=400
+                    e=e, msg="Failed to create user", code=400, _raise_immediately=False
                 )
 
                 error_dict = error_response.to_dict()
@@ -43,7 +43,7 @@ class TestResponseIntegration:
         assert isinstance(result, Ok)
         assert result.payload["message"] == "Async operation successful"
 
-        with pytest.raises(Error):
+        with pytest.raises(Exception):
             await async_operation(False)
 
     def test_framework_compatibility(self):
@@ -57,7 +57,7 @@ class TestResponseIntegration:
             result = ok_response.to_framework_response()
             assert result == "fastapi_ok"
 
-        error_response = Error(msg="Test error", code=400)
+        error_response = Error(msg="Test error", code=400, _raise_immediately=False)
 
         with patch.object(Error, "_handle_error_with_handlers"), patch(
             "oguild.response.response.FastAPIHTTPException"
