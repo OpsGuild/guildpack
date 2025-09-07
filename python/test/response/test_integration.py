@@ -15,7 +15,7 @@ class TestResponseIntegration:
 
         # Ok returns a framework response, check its properties
         assert success_response.status_code == 201
-        
+
         # Check content
         import json
         if hasattr(success_response, 'body'):
@@ -24,7 +24,7 @@ class TestResponseIntegration:
             content = json.loads(success_response.content.decode('utf-8'))
         else:
             content = success_response  # fallback case
-        
+
         assert content["user_id"] == 123
 
         try:
@@ -53,7 +53,7 @@ class TestResponseIntegration:
         result = await async_operation(True)
         # Ok returns a framework response, not an Ok instance
         assert hasattr(result, 'status_code')
-        
+
         # Check content
         import json
         if hasattr(result, 'body'):
@@ -62,7 +62,7 @@ class TestResponseIntegration:
             content = json.loads(result.content.decode('utf-8'))
         else:
             content = result  # fallback case
-        
+
         assert content["message"] == "Async operation successful"
 
         with pytest.raises(Exception):

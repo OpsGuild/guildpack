@@ -1,6 +1,5 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import pytest
 from oguild.response import Ok
 
 
@@ -21,7 +20,7 @@ class TestOk:
             content = json.loads(response.content.decode('utf-8'))
         else:
             content = response  # fallback case
-        
+
         assert content["message"] == "OK"
         assert content["status_code"] == 200
         # Should not include data or _extra when not provided
@@ -47,7 +46,7 @@ class TestOk:
             content = json.loads(response.content.decode('utf-8'))
         else:
             content = response  # fallback case
-        
+
         assert content["message"] == "Created successfully"
         assert content["status_code"] == 201
         assert content["data"]["id"] == 123
@@ -68,7 +67,7 @@ class TestOk:
             content = json.loads(response.content.decode('utf-8'))
         else:
             content = response  # fallback case
-        
+
         assert content["message"] == "OK"
         assert content["data"] == [1, 2, 3]
         assert content["count"] == 3
@@ -95,7 +94,7 @@ class TestOk:
     def test_ok_with_null_data_and_empty_extra(self):
         """Test Ok class with null data and empty extra fields."""
         response = Ok(message="Created", data=None, status_code=201)
-        
+
         # For framework responses, we need to check the content
         import json
         if hasattr(response, 'body'):
@@ -104,7 +103,7 @@ class TestOk:
             result = json.loads(response.content.decode('utf-8'))
         else:
             result = response  # fallback case
-        
+
         assert result["message"] == "Created"
         assert result["status_code"] == 201
         # Should not include data when it's None
@@ -115,7 +114,7 @@ class TestOk:
     def test_ok_with_empty_extra_fields(self):
         """Test Ok class with empty extra fields should not include _extra."""
         response = Ok(message="Test", status_code=200)
-        
+
         # For framework responses, we need to check the content
         import json
         if hasattr(response, 'body'):
@@ -124,7 +123,7 @@ class TestOk:
             result = json.loads(response.content.decode('utf-8'))
         else:
             result = response  # fallback case
-        
+
         assert result["message"] == "Test"
         assert result["status_code"] == 200
         # Should not include _extra when it's empty
@@ -244,7 +243,7 @@ class TestOk:
         # Normal case should work
         assert hasattr(response, 'status_code')
         assert response.status_code == 206
-        
+
         # Check content
         import json
         if hasattr(response, 'body'):
@@ -253,18 +252,18 @@ class TestOk:
             content = json.loads(response.content.decode('utf-8'))
         else:
             content = response  # fallback case
-        
+
         assert content["message"] == "Test Exception"
         assert content["status_code"] == 206
 
     def test_ok_direct_usage(self):
         """Test Ok can be used directly as a response."""
         response = Ok(message="Test")
-        
+
         # Ok returns a framework response that can be used directly
         assert hasattr(response, 'status_code')
         assert response.status_code == 200
-        
+
         # Check content is properly formatted
         import json
         if hasattr(response, 'body'):
@@ -273,6 +272,6 @@ class TestOk:
             content = json.loads(response.content.decode('utf-8'))
         else:
             content = response  # fallback case
-        
+
         assert content["message"] == "Test"
         assert content["status_code"] == 200

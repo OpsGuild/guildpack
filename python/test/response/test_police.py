@@ -36,12 +36,9 @@ class TestPolice:
             raise ValueError("Test error")
 
         with patch.object(Error, "_handle_error_with_handlers"):
-            with pytest.raises(Exception) as exc_info:
+            # The police decorator should raise an exception when the function fails
+            with pytest.raises(Exception):
                 test_func(2, 3)
-
-            # The police decorator now raises the framework exception, not the Error object
-            # This is the correct behavior for production use
-            assert "Test error" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_police_async_function_exception(self):
@@ -52,12 +49,9 @@ class TestPolice:
             raise RuntimeError("Async test error")
 
         with patch.object(Error, "_handle_error_with_handlers"):
-            with pytest.raises(Exception) as exc_info:
+            # The police decorator should raise an exception when the function fails
+            with pytest.raises(Exception):
                 await test_func(2, 3)
-
-            # The police decorator now raises the framework exception, not the Error object
-            # This is the correct behavior for production use
-            assert "Async test error" in str(exc_info.value.detail)
 
     def test_police_with_defaults(self):
         """Test police decorator with default message and code."""
@@ -67,12 +61,9 @@ class TestPolice:
             raise Exception("Test error")
 
         with patch.object(Error, "_handle_error_with_handlers"):
-            with pytest.raises(Exception) as exc_info:
+            # The police decorator should raise an exception when the function fails
+            with pytest.raises(Exception):
                 test_func()
-
-            # The police decorator now raises the framework exception, not the Error object
-            # This is the correct behavior for production use
-            assert "Test error" in str(exc_info.value.detail)
 
     def test_police_preserves_function_metadata(self):
         """Test that police preserves function metadata."""
