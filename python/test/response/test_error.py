@@ -56,26 +56,33 @@ class TestError:
         ) as mock_attrs:
             mock_attrs.return_value = {"type": "ValueError"}
 
-            error = Error(e=exception, msg="Custom message", code=400, _raise_immediately=False)
+            error = Error(
+                e=exception,
+                msg="Custom message",
+                code=400,
+                _raise_immediately=False,
+            )
             result = error.to_dict()
 
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_message": "Test error"},
+                "error": {"level": "ERROR", "detail": "Test error"},
             }
             assert result == expected
 
     def test_error_to_dict_without_exception(self):
         """Test Error to_dict without exception."""
         with patch.object(Error, "_handle_error_with_handlers"):
-            error = Error(msg="Custom message", code=400, _raise_immediately=False)
+            error = Error(
+                msg="Custom message", code=400, _raise_immediately=False
+            )
             result = error.to_dict()
 
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_message": None},
+                "error": {"level": "ERROR", "detail": None},
             }
             assert result == expected
 
@@ -93,7 +100,7 @@ class TestError:
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_message": None},
+                "error": {"level": "ERROR", "detail": None},
                 "extra": "data",
                 "count": 5,
             }
@@ -102,35 +109,47 @@ class TestError:
     def test_error_to_framework_exception_fastapi(self):
         """Test Error to_framework_exception with FastAPI."""
         with patch.object(Error, "_handle_error_with_handlers"):
-            error = Error(msg="Test FastAPI error", code=400, _raise_immediately=False)
+            error = Error(
+                msg="Test FastAPI error", code=400, _raise_immediately=False
+            )
             result = error.to_framework_exception()
 
             # Check if FastAPI is available
             try:
                 from fastapi import HTTPException
+
                 assert isinstance(result, HTTPException)
                 assert result.status_code == 400
                 assert "Test FastAPI error" in str(result.detail)
             except ImportError:
                 # If FastAPI not available, should fall back to other framework
-                assert hasattr(result, 'status_code') or hasattr(result, 'code')
+                assert hasattr(result, "status_code") or hasattr(
+                    result, "code"
+                )
 
     def test_error_to_framework_exception_starlette(self):
         """Test Error to_framework_exception with Starlette."""
         with patch("oguild.response.response.FastAPIHTTPException", None):
             with patch.object(Error, "_handle_error_with_handlers"):
-                error = Error(msg="Test Starlette error", code=401, _raise_immediately=False)
+                error = Error(
+                    msg="Test Starlette error",
+                    code=401,
+                    _raise_immediately=False,
+                )
                 result = error.to_framework_exception()
 
                 # Check if Starlette is available
                 try:
                     from starlette.exceptions import HTTPException
+
                     assert isinstance(result, HTTPException)
                     assert result.status_code == 401
                     assert "Test Starlette error" in str(result.detail)
                 except ImportError:
                     # If Starlette not available, should fall back to other framework
-                    assert hasattr(result, 'status_code') or hasattr(result, 'code')
+                    assert hasattr(result, "status_code") or hasattr(
+                        result, "code"
+                    )
 
     def test_error_to_framework_exception_django(self):
         """Test Error to_framework_exception with Django."""
@@ -150,7 +169,9 @@ class TestError:
             "oguild.response.response.FastAPIHTTPException", None
         ), patch("oguild.response.response.StarletteHTTPException", None):
             with patch.object(Error, "_handle_error_with_handlers"):
-                error = Error(msg="Test Django error", code=402, _raise_immediately=False)
+                error = Error(
+                    msg="Test Django error", code=402, _raise_immediately=False
+                )
                 result = error.to_framework_exception()
 
                 from django.http import JsonResponse
@@ -172,7 +193,11 @@ class TestError:
             "oguild.response.response.DjangoJsonResponse", None
         ):
             with patch.object(Error, "_handle_error_with_handlers"):
-                error = Error(msg="Test Werkzeug error", code=403, _raise_immediately=False)
+                error = Error(
+                    msg="Test Werkzeug error",
+                    code=403,
+                    _raise_immediately=False,
+                )
                 result = error.to_framework_exception()
 
                 from werkzeug.exceptions import HTTPException
@@ -194,7 +219,11 @@ class TestError:
         ):
 
             with patch.object(Error, "_handle_error_with_handlers"):
-                error = Error(msg="Test Fallback error", code=404, _raise_immediately=False)
+                error = Error(
+                    msg="Test Fallback error",
+                    code=404,
+                    _raise_immediately=False,
+                )
                 result = error.to_framework_exception()
 
                 assert isinstance(result, Exception)

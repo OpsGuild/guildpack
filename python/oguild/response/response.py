@@ -305,7 +305,7 @@ class Error(Exception):
             "status_code": self.http_status_code,
             "error": {
                 "level": self.level,
-                "error_message": str(self.e).strip() if self.e else None,
+                "detail": str(self.e).strip() if self.e else None,
             },
             **self.additional_info,
         }
