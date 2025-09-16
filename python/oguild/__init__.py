@@ -6,6 +6,11 @@ from .response import (AuthenticationErrorHandler, CommonErrorHandler,
                        NetworkErrorHandler, Ok, ValidationErrorHandler, police)
 from .utils import sanitize_fields
 
+# Import aliases for backward compatibility (singular/plural forms)
+from .log import Logger as LogLogger, logger as log_logger
+from .responses import (Ok as ResponsesOk, Error as ResponsesError, 
+                       police as responses_police)
+
 __all__ = [
     "Logger",
     "logger",
@@ -19,4 +24,10 @@ __all__ = [
     "AuthenticationErrorHandler",
     "FileErrorHandler",
     "sanitize_fields",
+    # Aliases for singular/plural compatibility
+    "LogLogger",
+    "log_logger", 
+    "ResponsesOk",
+    "ResponsesError",
+    "responses_police",
 ]

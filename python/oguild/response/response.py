@@ -77,7 +77,6 @@ def police(
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
-            _log_call(func, args, kwargs)
             try:
                 return await func(*args, **kwargs)
             except Exception as e:
@@ -91,7 +90,6 @@ def police(
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
-            _log_call(func, args, kwargs)
             try:
                 return func(*args, **kwargs)
             except Exception as e:
@@ -109,20 +107,6 @@ def police(
         return decorator(_func)
 
     return decorator
-
-
-def _log_call(func, args, kwargs):
-    """Helper to log function calls."""
-    formatted_args = ", ".join(format_param(a) for a in args)
-    formatted_kwargs = ", ".join(
-        f"{k}={format_param(v)}" for k, v in kwargs.items()
-    )
-    full_params = (
-        f"{func.__name__}({formatted_args}"
-        + (f", {formatted_kwargs}" if formatted_kwargs else "")
-        + ")"
-    )
-    logger.debug(f"Calling {full_params}")
 
 
 def _default_encoder(obj: Any):
@@ -241,7 +225,14 @@ class Error(Exception):
         level: Optional[str] = None,
         additional_info: Optional[dict] = None,
         _raise_immediately: bool = True,
+        **kwargs,
     ):
+        if "error" in kwargs and not e:
+            e = kwargs["error"]
+        if "message" in kwargs and not msg:
+            msg = kwargs["message"]
+        if "status_code" in kwargs and not code:
+            code = kwargs["status_code"]
         if e is None:
             exc_type, exc_value, _ = sys.exc_info()
             if exc_value is not None:
@@ -263,12 +254,14 @@ class Error(Exception):
         self.file_handler = FileErrorHandler(self.logger)
 
         if e:
-            self._handle_error_with_handlers(e)
+            self._handle_error_with_handlers(e, msg=msg)
 
         if _raise_immediately:
             raise self.to_framework_exception()
 
-    def _handle_error_with_handlers(self, e: Exception):
+    def _handle_error_with_handlers(
+        self, e: Exception, msg: Optional[str] = None
+    ):
         if self.database_handler._is_database_error(e):
             info = self.database_handler.handle_error(e)
         elif self.validation_handler._is_validation_error(e):
@@ -286,7 +279,9 @@ class Error(Exception):
         self.http_status_code = info.get(
             "http_status_code", self.http_status_code
         )
-        self.msg = info.get("message", self.msg)
+
+        if not msg:
+            self.msg = info.get("message", self.msg)
 
     def to_dict(self):
         if self.e:

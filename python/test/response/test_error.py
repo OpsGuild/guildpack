@@ -45,7 +45,7 @@ class TestError:
 
         with patch.object(Error, "_handle_error_with_handlers") as mock_handle:
             Error(exception, _raise_immediately=False)
-            mock_handle.assert_called_once_with(exception)
+            mock_handle.assert_called_once_with(exception, msg=None)
 
     def test_error_to_dict_with_exception(self):
         """Test Error to_dict with exception."""
