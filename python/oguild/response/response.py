@@ -213,6 +213,7 @@ class Error(Exception):
         level: Optional[str] = None,
         additional_info: Optional[dict] = None,
         _raise_immediately: bool = True,
+        **kwargs,
     ):
         instance = super().__new__(cls)
         return instance

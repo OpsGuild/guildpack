@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oguild"
-version = "0.1.8"
+version = "0.1.9"
 description = "OGuild utilities — reusable logging and helpers for Python projects"
 readme = "README.md"
 authors = ["Hordunlarmy <Hordunlarmy@gmail.com>"]
