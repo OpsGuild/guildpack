@@ -50,7 +50,8 @@ pip install oguild
 ### Python Logger
 
 ```python
-from oguild.logs import logger
+# You can import from either singular or plural forms:
+from oguild.logs import logger  # or from oguild.log import logger
 
 # Simple logging
 logger.info("Hello, World!")
@@ -65,7 +66,8 @@ logger.debug("Debug information")
 ### Python Response Handling
 
 ```python
-from oguild.response import Ok, Error, police
+# You can import from either singular or plural forms:
+from oguild.response import Ok, Error, police  # or from oguild.responses import Ok, Error, police
 
 # Success response
 def get_user(user_id: int):
@@ -98,6 +100,26 @@ clean_data = await sanitize_fields({
 ```
 
 **📖 [Full Python Utils Documentation](python/oguild/utils/README.md)**
+
+## 🔄 Flexible Import Options
+
+OGuild provides flexible import options to accommodate different coding preferences:
+
+### Logger Imports
+```python
+# Both of these work identically:
+from oguild.logs import Logger, logger      # Original plural form
+from oguild.log import Logger, logger       # New singular form
+```
+
+### Response Imports
+```python
+# Both of these work identically:
+from oguild.response import Ok, Error, police        # Original singular form
+from oguild.responses import Ok, Error, police       # New plural form
+```
+
+This flexibility ensures that users can import using their preferred naming convention while maintaining full backward compatibility.
 
 ## 🤝 Contributing
 
@@ -145,6 +167,14 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - **Team**: OpsGuild <Hordunlarmy@gmail.com>
 
 ## 🔄 Changelog
+
+### Version 0.2.1
+
+- **🔄 Flexible Import Options** - Added support for both singular and plural import forms
+  - `oguild.logs` and `oguild.log` - both work identically for logger imports
+  - `oguild.response` and `oguild.responses` - both work identically for response imports
+  - Full backward compatibility maintained
+  - Enhanced developer experience with preferred naming conventions
 
 ### Version 0.2.0
 
