@@ -237,6 +237,10 @@ class Error(Exception):
         if e is None:
             exc_type, exc_value, _ = sys.exc_info()
             if exc_value is not None:
+                # If the current exception is already an Error instance, re-raise it directly
+                # to prevent double-wrapping
+                if isinstance(exc_value, Error):
+                    raise exc_value
                 e = exc_value
 
         self.e = e
