@@ -83,7 +83,7 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
             error = Error(
                 e=exc,
                 msg=self.default_error_message,
-                code=self.default_error_code,
+                code=None,  # Let Error class use handlers to determine status code
                 additional_info=request_info,
                 _raise_immediately=False,
             )
@@ -130,7 +130,7 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
                 error = Error(
                     e=exc,
                     msg=str(exc),
-                    code=self.default_error_code,
+                    code=None,  # Let Error class use handlers to determine status code
                     additional_info=request_info,
                     _raise_immediately=False,
                 )
@@ -178,7 +178,7 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
             error = Error(
                 e=exc,
                 msg=self.default_error_message,
-                code=self.default_error_code,
+                code=None,  # Let Error class use handlers to determine status code
                 additional_info=request_info,
                 _raise_immediately=False,
             )
@@ -209,7 +209,7 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
         error = Error(
             e=exc,
             msg=str(exc),
-            code=self.default_error_code,
+            code=None,  # Let Error class use handlers to determine status code
             additional_info=additional_info,
             _raise_immediately=False,
         )
