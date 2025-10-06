@@ -76,11 +76,16 @@ class TestResponseIntegration:
         assert hasattr(ok_response, 'status_code')
         assert ok_response.status_code == 200
 
-        error_response = Error(msg="Test error", code=400, _raise_immediately=False)
+        # Create a mock FastAPIHTTPException instance
+        mock_fastapi_exception = type('FastAPIHTTPException', (), {
+            'status_code': 400,
+            'detail': 'Test error'
+        })
+        
+        error_response = Error(e=mock_fastapi_exception(), msg="Test error", code=400, _raise_immediately=False)
 
         with patch.object(Error, "_handle_error_with_handlers"), patch(
-            "oguild.response.response.FastAPIHTTPException"
-        ) as mock_fastapi:
-            mock_fastapi.return_value = "fastapi_error"
+            "oguild.response.response.FastAPIHTTPException", mock_fastapi_exception
+        ):
             result = error_response.to_framework_exception()
-            assert result == "fastapi_error"
+            assert result == error_response.e  # Should return the original exception

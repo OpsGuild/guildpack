@@ -3,6 +3,7 @@ import inspect
 import json
 import sys
 import traceback
+import uuid
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
 
@@ -203,42 +204,89 @@ class Ok:
 
 
 class Error(Exception):
-    """Error response class with multi-framework support."""
+    """Error response class with multi-framework support.
+
+    Dynamic usage patterns:
+        raise Error("Something went wrong")
+        raise Error("Not found", 404)
+        raise Error(ValueError("Invalid input"), "Validation failed", 400)
+        raise Error(404, "Not found")
+        raise Error(exception, status_code=500, message="Server error")
+    """
 
     def __new__(
         cls,
-        e: Optional[Exception] = None,
-        msg: Optional[str] = None,
-        code: Optional[int] = None,
-        level: Optional[str] = None,
-        additional_info: Optional[dict] = None,
-        _raise_immediately: bool = True,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         instance = super().__new__(cls)
         return instance
 
     def __init__(
         self,
-        e: Optional[Exception] = None,
-        msg: Optional[str] = None,
-        code: Optional[int] = None,
-        level: Optional[str] = None,
-        additional_info: Optional[dict] = None,
-        _raise_immediately: bool = True,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
+        # If we're already in the middle of handling an exception that represents
+        # a previously raised Error (either the Error itself or a framework-specific
+        # HTTPException produced by Error.to_framework_exception), re-raise it
+        # immediately to avoid any double-wrapping regardless of the new args.
+        try:
+            exc_type, exc_value, _ = sys.exc_info()
+            if exc_value is not None:
+                # Case 1: Original Error instance is being handled → re-raise
+                if isinstance(exc_value, Error):
+                    raise exc_value
+
+                # Case 2: FastAPI/Starlette HTTPException with our error dict in .detail
+                detail = getattr(exc_value, "detail", None)
+                if isinstance(detail, dict) and all(
+                    k in detail for k in ("message", "status_code", "error")
+                ):
+                    raise exc_value
+
+                # Case 3: Werkzeug HTTPException with our error dict JSON in .description
+                description = getattr(exc_value, "description", None)
+                if isinstance(description, str):
+                    try:
+                        parsed = json.loads(description)
+                        if isinstance(parsed, dict) and all(
+                            k in parsed
+                            for k in ("message", "status_code", "error")
+                        ):
+                            raise exc_value
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        e: Optional[Exception] = kwargs.pop("e", None)
+        msg: Optional[str] = kwargs.pop("msg", None)
+        code: Optional[int] = kwargs.pop("code", None)
+        level: Optional[str] = kwargs.pop("level", None)
+        additional_info: Optional[dict] = kwargs.pop("additional_info", None)
+        _raise_immediately: bool = kwargs.pop("_raise_immediately", True)
+
         if "error" in kwargs and not e:
-            e = kwargs["error"]
+            e = kwargs.pop("error")
         if "message" in kwargs and not msg:
-            msg = kwargs["message"]
+            msg = kwargs.pop("message")
         if "status_code" in kwargs and not code:
-            code = kwargs["status_code"]
+            code = kwargs.pop("status_code")
+
+        for arg in args:
+            if isinstance(arg, Exception):
+                e = arg
+            elif isinstance(arg, str):
+                msg = arg
+            elif isinstance(arg, int):
+                code = arg
+            elif isinstance(arg, dict):
+                additional_info = arg
+
         if e is None:
             exc_type, exc_value, _ = sys.exc_info()
             if exc_value is not None:
-                # If the current exception is already an Error instance, re-raise it directly
-                # to prevent double-wrapping
                 if isinstance(exc_value, Error):
                     raise exc_value
                 e = exc_value
@@ -248,7 +296,13 @@ class Error(Exception):
         self.http_status_code = code or 500
         self.level = level or "ERROR"
         self.additional_info = additional_info or {}
-        self.logger = Logger(str(self.http_status_code)).get_logger()
+
+        self.error_id = str(uuid.uuid4())
+
+        if kwargs:
+            self.additional_info.update(kwargs)
+
+        self.logger = Logger(self.error_id).get_logger()
 
         # Handlers
         self.common_handler = CommonErrorHandler(self.logger)
@@ -304,17 +358,46 @@ class Error(Exception):
         else:
             self.logger.error(self.msg)
 
+        detail = None
+        if self.e:
+            if isinstance(self.e, Error):
+                detail = self.e.msg
+            else:
+                detail = str(self.e).strip()
+
         return {
             "message": self.msg,
             "status_code": self.http_status_code,
             "error": {
                 "level": self.level,
-                "detail": str(self.e).strip() if self.e else None,
+                "error_id": self.error_id,
+                "detail": detail,
             },
             **self.additional_info,
         }
 
     def to_framework_exception(self):
+        # If the underlying exception is already a framework exception or Error,
+        # return it directly to avoid any double-wrapping
+        if (
+            FastAPIHTTPException is not None
+            and isinstance(self.e, FastAPIHTTPException)
+        ):
+            return self.e
+        if (
+            StarletteHTTPException is not None
+            and isinstance(self.e, StarletteHTTPException)
+        ):
+            return self.e
+        if (
+            WerkzeugHTTPException is not None
+            and isinstance(self.e, WerkzeugHTTPException)
+        ):
+            return self.e
+        if isinstance(self.e, Error):
+            # Delegate to the inner Error's framework exception
+            return self.e.to_framework_exception()
+
         error_dict = self.to_dict()
 
         if FastAPIHTTPException:
