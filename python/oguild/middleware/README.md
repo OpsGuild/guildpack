@@ -18,7 +18,7 @@ app = FastAPI()
 app.add_middleware(ErrorMiddleware)
 
 # With custom configuration
-app.add_middleware(ErrorMiddleware, 
+app.add_middleware(ErrorMiddleware,
     default_error_message="Something went wrong",
     default_error_code=500,
     include_request_info=False  # Default: False (no request info)
@@ -68,7 +68,7 @@ class DjangoErrorMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.error_handler = error_middleware.django_middleware(get_response)
-    
+
     def __call__(self, request):
         return self.error_handler(request)
 

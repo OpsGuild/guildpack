@@ -67,7 +67,11 @@ class TestError:
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_id": error.error_id, "detail": "Test error"},
+                "error": {
+                    "level": "ERROR",
+                    "error_id": error.error_id,
+                    "detail": "Test error",
+                },
             }
             assert result == expected
 
@@ -82,7 +86,11 @@ class TestError:
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_id": error.error_id, "detail": None},
+                "error": {
+                    "level": "ERROR",
+                    "error_id": error.error_id,
+                    "detail": None,
+                },
             }
             assert result == expected
 
@@ -100,7 +108,11 @@ class TestError:
             expected = {
                 "message": "Custom message",
                 "status_code": 400,
-                "error": {"level": "ERROR", "error_id": error.error_id, "detail": None},
+                "error": {
+                    "level": "ERROR",
+                    "error_id": error.error_id,
+                    "detail": None,
+                },
                 "extra": "data",
                 "count": 5,
             }
@@ -263,7 +275,7 @@ class TestError:
             original_error = Error(
                 msg="Original error message",
                 code=403,
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             # Simulate the scenario where Error is re-raised without parameters
@@ -300,7 +312,9 @@ class TestError:
             assert exc_info.value.e is not None
             assert isinstance(exc_info.value.e, ValueError)
             assert str(exc_info.value.e) == "Some value error"
-            assert exc_info.value.http_status_code == 500  # Default status code
+            assert (
+                exc_info.value.http_status_code == 500
+            )  # Default status code
 
     def test_mark_message_as_read_scenario(self):
         """Test the specific scenario from mark_message_as_read method."""
@@ -309,7 +323,7 @@ class TestError:
             original_error = Error(
                 msg="You can only mark your own messages as read",
                 status_code=403,
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             # Simulate the user's mark_message_as_read method scenario
@@ -327,7 +341,10 @@ class TestError:
 
             # Verify it's the same Error instance (not double-wrapped)
             assert exc_info.value is original_error
-            assert exc_info.value.msg == "You can only mark your own messages as read"
+            assert (
+                exc_info.value.msg
+                == "You can only mark your own messages as read"
+            )
             assert exc_info.value.http_status_code == 403
             assert exc_info.value.e is None  # No underlying exception
 
@@ -362,7 +379,9 @@ class TestError:
         """Test Error with exception and message."""
         with patch.object(Error, "_handle_error_with_handlers"):
             exception = ValueError("Invalid input")
-            error = Error(exception, "Validation failed", _raise_immediately=False)
+            error = Error(
+                exception, "Validation failed", _raise_immediately=False
+            )
 
             assert error.msg == "Validation failed"
             assert error.http_status_code is None  # No handlers run, so None
@@ -372,7 +391,9 @@ class TestError:
         """Test Error with exception, message, and status code."""
         with patch.object(Error, "_handle_error_with_handlers"):
             exception = ValueError("Invalid input")
-            error = Error(exception, "Validation failed", 400, _raise_immediately=False)
+            error = Error(
+                exception, "Validation failed", 400, _raise_immediately=False
+            )
 
             assert error.msg == "Validation failed"
             assert error.http_status_code == 400
@@ -382,7 +403,12 @@ class TestError:
         """Test Error with dictionary as additional info."""
         with patch.object(Error, "_handle_error_with_handlers"):
             additional_info = {"field": "value", "count": 5}
-            error = Error("Error occurred", 500, additional_info, _raise_immediately=False)
+            error = Error(
+                "Error occurred",
+                500,
+                additional_info,
+                _raise_immediately=False,
+            )
 
             assert error.msg == "Error occurred"
             assert error.http_status_code == 500
@@ -396,12 +422,15 @@ class TestError:
                 500,
                 extra_field="extra_value",
                 another_field=123,
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             assert error.msg == "Error occurred"
             assert error.http_status_code == 500
-            assert error.additional_info == {"extra_field": "extra_value", "another_field": 123}
+            assert error.additional_info == {
+                "extra_field": "extra_value",
+                "another_field": 123,
+            }
 
     def test_error_dynamic_legacy_keyword_args(self):
         """Test Error with legacy keyword argument names."""
@@ -409,7 +438,7 @@ class TestError:
             error = Error(
                 message="Legacy message",
                 status_code=403,
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             assert error.msg == "Legacy message"
@@ -425,7 +454,7 @@ class TestError:
                 500,
                 level="WARNING",
                 custom_field="custom_value",
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             assert error.msg == "Mixed args test"
@@ -442,7 +471,7 @@ class TestError:
                 404,  # Should override kwargs
                 message="Keyword message",  # Should be ignored
                 status_code=500,  # Should be ignored
-                _raise_immediately=False
+                _raise_immediately=False,
             )
 
             assert error.msg == "Positional message"
@@ -455,8 +484,8 @@ class TestError:
             error2 = Error("Test error 2", _raise_immediately=False)
 
             # Both should have error_id
-            assert hasattr(error1, 'error_id')
-            assert hasattr(error2, 'error_id')
+            assert hasattr(error1, "error_id")
+            assert hasattr(error2, "error_id")
 
             # error_id should be strings
             assert isinstance(error1.error_id, str)
@@ -467,6 +496,7 @@ class TestError:
 
             # error_id should be valid UUIDs
             import uuid
+
             assert uuid.UUID(error1.error_id) is not None
             assert uuid.UUID(error2.error_id) is not None
 
@@ -481,13 +511,17 @@ class TestError:
             assert "error_id" in error_dict["error"]
             assert error_dict["error"]["error_id"] == error.error_id
             assert error_dict["error"]["level"] == "ERROR"
-            assert error_dict["error"]["detail"] is None  # No underlying exception
+            assert (
+                error_dict["error"]["detail"] is None
+            )  # No underlying exception
 
     def test_error_id_with_exception(self):
         """Test that error_id is included when there's an underlying exception."""
         with patch.object(Error, "_handle_error_with_handlers"):
             exception = ValueError("Test exception")
-            error = Error(exception, "Test error", 400, _raise_immediately=False)
+            error = Error(
+                exception, "Test error", 400, _raise_immediately=False
+            )
             error_dict = error.to_dict()
 
             # error_id should be in the error detail
@@ -511,6 +545,7 @@ class TestError:
 
             # All should be valid UUIDs
             import uuid
+
             for error_id in error_ids:
                 assert uuid.UUID(error_id) is not None
 
@@ -518,10 +553,14 @@ class TestError:
         """Test that detail field shows message when underlying exception is an Error."""
         with patch.object(Error, "_handle_error_with_handlers"):
             # Create an inner error
-            inner_error = Error("Invalid credentials", 400, _raise_immediately=False)
+            inner_error = Error(
+                "Invalid credentials", 400, _raise_immediately=False
+            )
 
             # Create an outer error that wraps the inner error
-            outer_error = Error(inner_error, "Login failed", 401, _raise_immediately=False)
+            outer_error = Error(
+                inner_error, "Login failed", 401, _raise_immediately=False
+            )
             error_dict = outer_error.to_dict()
 
             # The detail should be the message of the inner error, not the full error object
@@ -534,7 +573,9 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             # Create an error with a regular exception
             exception = ValueError("Invalid input data")
-            error = Error(exception, "Validation failed", 400, _raise_immediately=False)
+            error = Error(
+                exception, "Validation failed", 400, _raise_immediately=False
+            )
             error_dict = error.to_dict()
 
             # The detail should be the exception message
@@ -556,10 +597,13 @@ class TestError:
     def test_login_user_scenario_no_double_wrap(self):
         """Test the login_user scenario to prevent double-wrapping."""
         with patch.object(Error, "_handle_error_with_handlers"):
+
             def simulate_login_user():
                 try:
                     # Simulate the authentication failure
-                    raise Error("Invalid credentials", 400, _raise_immediately=False)
+                    raise Error(
+                        "Invalid credentials", 400, _raise_immediately=False
+                    )
                 except Error:
                     # Re-raise Error instances directly (no double-wrapping)
                     raise
@@ -575,12 +619,17 @@ class TestError:
             assert exc_info.value.http_status_code == 400
             # Should not have double-wrapped structure
             error_dict = exc_info.value.to_dict()
-            assert error_dict["error"]["detail"] is None  # No underlying exception
-            assert "Login failed" not in str(error_dict)  # No outer error message
+            assert (
+                error_dict["error"]["detail"] is None
+            )  # No underlying exception
+            assert "Login failed" not in str(
+                error_dict
+            )  # No outer error message
 
     def test_login_user_scenario_with_unexpected_exception(self):
         """Test the login_user scenario with unexpected exception."""
         with patch.object(Error, "_handle_error_with_handlers"):
+
             def simulate_login_user_with_unexpected_error():
                 try:
                     # Simulate an unexpected error
@@ -600,4 +649,6 @@ class TestError:
             assert exc_info.value.http_status_code == 500
             # Should have the original exception as detail
             error_dict = exc_info.value.to_dict()
-            assert error_dict["error"]["detail"] == "Database connection failed"
+            assert (
+                error_dict["error"]["detail"] == "Database connection failed"
+            )

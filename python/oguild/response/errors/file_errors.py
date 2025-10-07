@@ -18,11 +18,13 @@ except ImportError:
 
 try:
     import google.cloud.storage
+    from google.api_core import exceptions as gcs_exceptions
 
     GCS_AVAILABLE = True
 except ImportError:
     GCS_AVAILABLE = False
     google = None
+    gcs_exceptions = None
 
 try:
     import minio
@@ -48,7 +50,7 @@ class FileErrorHandler:
         ):
             return True
         if GCS_AVAILABLE and isinstance(
-            e, google.cloud.storage.exceptions.GoogleCloudError
+            e, gcs_exceptions.GoogleAPIError
         ):
             return True
         if MINIO_AVAILABLE and isinstance(e, minio.error.MinioException):
@@ -95,7 +97,7 @@ class FileErrorHandler:
         ):
             return self._handle_azure_error(e)
         elif GCS_AVAILABLE and isinstance(
-            e, google.cloud.storage.exceptions.GoogleCloudError
+            e, gcs_exceptions.GoogleAPIError
         ):
             return self._handle_gcs_error(e)
         elif MINIO_AVAILABLE and isinstance(e, minio.error.MinioException):
@@ -180,7 +182,7 @@ class FileErrorHandler:
         return error_info
 
     def _handle_gcs_error(
-        self, e: "google.cloud.storage.exceptions.GoogleCloudError"
+        self, e: "gcs_exceptions.GoogleAPIError"
     ) -> Dict[str, Any]:
         """Handle Google Cloud Storage errors."""
         error_info = {
