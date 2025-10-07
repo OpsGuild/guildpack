@@ -257,7 +257,7 @@ class TestError:
         """Test that re-raising Error without parameters doesn't double-wrap."""
         # Test the fix: when re-raising Error without parameters, it should
         # re-raise the original Error instance instead of wrapping it
-        
+
         with patch.object(Error, "_handle_error_with_handlers"):
             # Create an original Error
             original_error = Error(
@@ -265,7 +265,7 @@ class TestError:
                 code=403,
                 _raise_immediately=False
             )
-            
+
             # Simulate the scenario where Error is re-raised without parameters
             # This should re-raise the original Error, not wrap it
             with pytest.raises(Error) as exc_info:
@@ -274,7 +274,7 @@ class TestError:
                 except Error:
                     # This is the problematic pattern that should now work correctly
                     raise Error  # Should re-raise the original Error
-            
+
             # Verify it's the same Error instance (not wrapped)
             assert exc_info.value is original_error
             assert exc_info.value.msg == "Original error message"
@@ -295,7 +295,7 @@ class TestError:
                     error.msg = "Unknown server error."
                     error.http_status_code = 500
                     raise error
-            
+
             # Verify it wrapped the ValueError
             assert exc_info.value.e is not None
             assert isinstance(exc_info.value.e, ValueError)
@@ -311,20 +311,20 @@ class TestError:
                 status_code=403,
                 _raise_immediately=False
             )
-            
+
             # Simulate the user's mark_message_as_read method scenario
             def simulate_mark_message_as_read():
                 try:
                     # Simulate the permission check that fails
                     raise original_error
-                except Exception as e:
+                except Exception:
                     # This is the problematic pattern from the user's code
                     # that should now work correctly
                     raise Error  # Should re-raise the original Error
-            
+
             with pytest.raises(Error) as exc_info:
                 simulate_mark_message_as_read()
-            
+
             # Verify it's the same Error instance (not double-wrapped)
             assert exc_info.value is original_error
             assert exc_info.value.msg == "You can only mark your own messages as read"
@@ -335,7 +335,7 @@ class TestError:
         """Test Error with string as first argument."""
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error("Something went wrong", _raise_immediately=False)
-            
+
             assert error.msg == "Something went wrong"
             assert error.http_status_code == 500  # Default status code
             assert error.e is None
@@ -344,7 +344,7 @@ class TestError:
         """Test Error with string and status code."""
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error("Not found", 404, _raise_immediately=False)
-            
+
             assert error.msg == "Not found"
             assert error.http_status_code == 404
             assert error.e is None
@@ -353,7 +353,7 @@ class TestError:
         """Test Error with status code and string (reversed order)."""
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error(404, "Not found", _raise_immediately=False)
-            
+
             assert error.msg == "Not found"
             assert error.http_status_code == 404
             assert error.e is None
@@ -363,9 +363,9 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             exception = ValueError("Invalid input")
             error = Error(exception, "Validation failed", _raise_immediately=False)
-            
+
             assert error.msg == "Validation failed"
-            assert error.http_status_code == 500  # Default status code
+            assert error.http_status_code is None  # No handlers run, so None
             assert error.e is exception
 
     def test_error_dynamic_exception_message_and_status(self):
@@ -373,7 +373,7 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             exception = ValueError("Invalid input")
             error = Error(exception, "Validation failed", 400, _raise_immediately=False)
-            
+
             assert error.msg == "Validation failed"
             assert error.http_status_code == 400
             assert error.e is exception
@@ -383,7 +383,7 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             additional_info = {"field": "value", "count": 5}
             error = Error("Error occurred", 500, additional_info, _raise_immediately=False)
-            
+
             assert error.msg == "Error occurred"
             assert error.http_status_code == 500
             assert error.additional_info == additional_info
@@ -392,13 +392,13 @@ class TestError:
         """Test Error with keyword arguments."""
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error(
-                "Error occurred", 
-                500, 
+                "Error occurred",
+                500,
                 extra_field="extra_value",
                 another_field=123,
                 _raise_immediately=False
             )
-            
+
             assert error.msg == "Error occurred"
             assert error.http_status_code == 500
             assert error.additional_info == {"extra_field": "extra_value", "another_field": 123}
@@ -411,7 +411,7 @@ class TestError:
                 status_code=403,
                 _raise_immediately=False
             )
-            
+
             assert error.msg == "Legacy message"
             assert error.http_status_code == 403
 
@@ -427,7 +427,7 @@ class TestError:
                 custom_field="custom_value",
                 _raise_immediately=False
             )
-            
+
             assert error.msg == "Mixed args test"
             assert error.http_status_code == 500
             assert error.level == "WARNING"
@@ -444,7 +444,7 @@ class TestError:
                 status_code=500,  # Should be ignored
                 _raise_immediately=False
             )
-            
+
             assert error.msg == "Positional message"
             assert error.http_status_code == 404
 
@@ -453,18 +453,18 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             error1 = Error("Test error 1", _raise_immediately=False)
             error2 = Error("Test error 2", _raise_immediately=False)
-            
+
             # Both should have error_id
             assert hasattr(error1, 'error_id')
             assert hasattr(error2, 'error_id')
-            
+
             # error_id should be strings
             assert isinstance(error1.error_id, str)
             assert isinstance(error2.error_id, str)
-            
+
             # error_id should be different
             assert error1.error_id != error2.error_id
-            
+
             # error_id should be valid UUIDs
             import uuid
             assert uuid.UUID(error1.error_id) is not None
@@ -475,7 +475,7 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error("Test error", 404, _raise_immediately=False)
             error_dict = error.to_dict()
-            
+
             # error_id should be in the error detail
             assert "error" in error_dict
             assert "error_id" in error_dict["error"]
@@ -489,7 +489,7 @@ class TestError:
             exception = ValueError("Test exception")
             error = Error(exception, "Test error", 400, _raise_immediately=False)
             error_dict = error.to_dict()
-            
+
             # error_id should be in the error detail
             assert "error" in error_dict
             assert "error_id" in error_dict["error"]
@@ -504,11 +504,11 @@ class TestError:
             for i in range(10):
                 error = Error(f"Test error {i}", _raise_immediately=False)
                 errors.append(error)
-            
+
             # All error_ids should be unique
             error_ids = [error.error_id for error in errors]
             assert len(set(error_ids)) == len(error_ids)  # All unique
-            
+
             # All should be valid UUIDs
             import uuid
             for error_id in error_ids:
@@ -519,11 +519,11 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             # Create an inner error
             inner_error = Error("Invalid credentials", 400, _raise_immediately=False)
-            
+
             # Create an outer error that wraps the inner error
             outer_error = Error(inner_error, "Login failed", 401, _raise_immediately=False)
             error_dict = outer_error.to_dict()
-            
+
             # The detail should be the message of the inner error, not the full error object
             assert error_dict["error"]["detail"] == "Invalid credentials"
             assert error_dict["message"] == "Login failed"
@@ -536,7 +536,7 @@ class TestError:
             exception = ValueError("Invalid input data")
             error = Error(exception, "Validation failed", 400, _raise_immediately=False)
             error_dict = error.to_dict()
-            
+
             # The detail should be the exception message
             assert error_dict["error"]["detail"] == "Invalid input data"
             assert error_dict["message"] == "Validation failed"
@@ -547,7 +547,7 @@ class TestError:
         with patch.object(Error, "_handle_error_with_handlers"):
             error = Error("Simple error", 500, _raise_immediately=False)
             error_dict = error.to_dict()
-            
+
             # The detail should be None
             assert error_dict["error"]["detail"] is None
             assert error_dict["message"] == "Simple error"
@@ -563,13 +563,13 @@ class TestError:
                 except Error:
                     # Re-raise Error instances directly (no double-wrapping)
                     raise
-                except Exception as e:
+                except Exception:
                     # Only catch unexpected exceptions
                     raise Error("Login failed", 500, _raise_immediately=False)
-            
+
             with pytest.raises(Error) as exc_info:
                 simulate_login_user()
-            
+
             # Should be the original error, not wrapped
             assert exc_info.value.msg == "Invalid credentials"
             assert exc_info.value.http_status_code == 400
@@ -588,13 +588,13 @@ class TestError:
                 except Error:
                     # Re-raise Error instances directly
                     raise
-                except Exception as e:
+                except Exception:
                     # Catch unexpected exceptions and wrap them
                     raise Error("Login failed", 500, _raise_immediately=False)
-            
+
             with pytest.raises(Error) as exc_info:
                 simulate_login_user_with_unexpected_error()
-            
+
             # Should be the wrapped error
             assert exc_info.value.msg == "Login failed"
             assert exc_info.value.http_status_code == 500

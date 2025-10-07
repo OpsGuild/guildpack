@@ -1,6 +1,6 @@
 """Test that both oguild.log and oguild.logs imports work correctly."""
 
-import pytest
+# import pytest  # Not used in this test
 
 
 class TestImportAliases:
@@ -22,7 +22,7 @@ class TestImportAliases:
         """Test that oguild.log and oguild.logs provide identical objects."""
         from oguild.logs import Logger as LogsLogger, logger as logs_logger
         from oguild.log import Logger as LogLogger, logger as log_logger
-        
+
         # They should be the same classes/objects
         assert LogsLogger is LogLogger, "Logger classes should be identical"
         assert logs_logger is log_logger, "logger instances should be identical"
@@ -31,7 +31,7 @@ class TestImportAliases:
         """Test direct module imports work."""
         import oguild.log as log_module
         import oguild.logs as logs_module
-        
+
         assert hasattr(log_module, 'Logger'), "oguild.log should have Logger"
         assert hasattr(logs_module, 'Logger'), "oguild.logs should have Logger"
         assert hasattr(log_module, 'logger'), "oguild.log should have logger"
@@ -41,11 +41,11 @@ class TestImportAliases:
         """Test that Logger works through both import paths."""
         from oguild.logs import Logger as LogsLogger
         from oguild.log import Logger as LogLogger
-        
+
         # Create logger instances through both paths
         logs_logger = LogsLogger("test_logs")
         log_logger = LogLogger("test_log")
-        
+
         # They should work identically
         assert logs_logger is not None
         assert log_logger is not None

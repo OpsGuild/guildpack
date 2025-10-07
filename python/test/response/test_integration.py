@@ -81,7 +81,7 @@ class TestResponseIntegration:
             'status_code': 400,
             'detail': 'Test error'
         })
-        
+
         error_response = Error(e=mock_fastapi_exception(), msg="Test error", code=400, _raise_immediately=False)
 
         with patch.object(Error, "_handle_error_with_handlers"), patch(

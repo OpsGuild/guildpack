@@ -293,7 +293,13 @@ class Error(Exception):
 
         self.e = e
         self.msg = msg or "Unknown server error."
-        self.http_status_code = code or 500
+        # Set status code: use provided code, or 500 if no exception, or None to let handlers decide
+        if code is not None:
+            self.http_status_code = code
+        elif e is None:
+            self.http_status_code = 500
+        else:
+            self.http_status_code = None  # Let handlers determine
         self.level = level or "ERROR"
         self.additional_info = additional_info or {}
 
@@ -335,9 +341,13 @@ class Error(Exception):
             info = self.common_handler.handle_error(e)
 
         self.level = info.get("level", self.level)
-        self.http_status_code = info.get(
-            "http_status_code", self.http_status_code
-        )
+        # Always use handler status code if available
+        handler_status_code = info.get("http_status_code")
+        if handler_status_code is not None:
+            self.http_status_code = handler_status_code
+        elif self.http_status_code is None:
+            # If no status code was set and handler doesn't provide one, use 500
+            self.http_status_code = 500
 
         if not msg:
             self.msg = info.get("message", self.msg)

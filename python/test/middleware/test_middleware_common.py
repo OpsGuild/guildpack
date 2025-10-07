@@ -3,7 +3,7 @@
 Test common ErrorMiddleware functionality across all frameworks
 """
 
-import pytest
+# import pytest  # Not used in this test
 from oguild import ErrorMiddleware, create_error_middleware
 
 

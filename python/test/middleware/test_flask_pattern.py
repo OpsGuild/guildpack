@@ -3,7 +3,7 @@
 Test Flask usage pattern with ErrorMiddleware
 """
 
-import pytest
+# import pytest  # Not used in this test
 from oguild import ErrorMiddleware
 
 

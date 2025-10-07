@@ -3,9 +3,15 @@
 Test middleware import aliases - both singular and plural forms
 """
 
-import pytest
-from oguild.middleware import ErrorMiddleware as SingularErrorMiddleware, create_error_middleware as singular_create_error_middleware
-from oguild.middlewares import ErrorMiddleware as PluralErrorMiddleware, create_error_middleware as plural_create_error_middleware
+# import pytest  # Not used in this test
+from oguild.middleware import (
+    ErrorMiddleware as SingularErrorMiddleware,
+    create_error_middleware as singular_create_error_middleware,
+)
+from oguild.middlewares import (
+    ErrorMiddleware as PluralErrorMiddleware,
+    create_error_middleware as plural_create_error_middleware,
+)
 
 
 class TestMiddlewareImportAliases:
@@ -32,7 +38,7 @@ class TestMiddlewareImportAliases:
         # Test that they work identically
         middleware1 = SingularErrorMiddleware()
         middleware2 = PluralErrorMiddleware()
-        
+
         assert middleware1.default_error_message == middleware2.default_error_message
         assert middleware1.default_error_code == middleware2.default_error_code
         assert middleware1.include_request_info == middleware2.include_request_info
@@ -45,17 +51,17 @@ class TestMiddlewareImportAliases:
             default_error_code=400,
             include_request_info=True
         )
-        
+
         PluralFactory = plural_create_error_middleware(
-            default_error_message="Test message", 
+            default_error_message="Test message",
             default_error_code=400,
             include_request_info=True
         )
-        
+
         # Create instances
         singular_instance = SingularFactory()
         plural_instance = PluralFactory()
-        
+
         # Test they have identical behavior
         assert singular_instance.default_error_message == plural_instance.default_error_message
         assert singular_instance.default_error_code == plural_instance.default_error_code

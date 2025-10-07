@@ -8,11 +8,7 @@ class TestResponseImportAliases:
 
     def test_response_import_works(self):
         """Test that original oguild.response import still works."""
-        from oguild.response import (AuthenticationErrorHandler,
-                                     CommonErrorHandler, DatabaseErrorHandler,
-                                     Error, FileErrorHandler,
-                                     NetworkErrorHandler, Ok,
-                                     ValidationErrorHandler, police)
+        from oguild.response import (CommonErrorHandler, Error, Ok, police)
 
         assert Ok is not None
         assert Error is not None
@@ -21,11 +17,7 @@ class TestResponseImportAliases:
 
     def test_responses_import_works(self):
         """Test that new oguild.responses import works."""
-        from oguild.responses import (AuthenticationErrorHandler,
-                                      CommonErrorHandler, DatabaseErrorHandler,
-                                      Error, FileErrorHandler,
-                                      NetworkErrorHandler, Ok,
-                                      ValidationErrorHandler, police)
+        from oguild.responses import (CommonErrorHandler, Error, Ok, police)
 
         assert Ok is not None
         assert Error is not None
