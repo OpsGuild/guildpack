@@ -11,9 +11,33 @@ class TestLogger:
     """Test cases for Logger class."""
 
     def test_default_logger_name(self):
-        """Test default logger name detection."""
-        logger = Logger()
-        assert logger.logger.name == "test.logs.test_logger"
+        """Test default logger returns dynamic wrapper for detection."""
+        logger_instance = Logger()
+        wrapped_logger = logger_instance.get_logger()
+
+        # When no name provided, get_logger returns dynamic wrapper
+        assert logger_instance._dynamic_wrapper is not None
+        assert logger_instance.logger is None
+
+        # The wrapper should have the log methods
+        assert hasattr(wrapped_logger, 'info')
+        assert hasattr(wrapped_logger, 'debug')
+        assert hasattr(wrapped_logger, 'error')
+
+    def test_dynamic_module_detection(self):
+        """Test that dynamic wrapper detects caller module at log time."""
+        logger_instance = Logger()
+        wrapped_logger = logger_instance.get_logger()
+
+        # Call a log method - this should create a logger for this test module
+        wrapped_logger.info("Test message")
+
+        # The wrapper should have cached a logger for this module
+        assert len(wrapped_logger._loggers) > 0
+
+        # The logger name should be this test module
+        cached_module_names = list(wrapped_logger._loggers.keys())
+        assert any('test_logger' in name for name in cached_module_names)
 
     def test_custom_logger_name(self):
         """Test custom logger name."""
@@ -76,7 +100,8 @@ class TestLogger:
         assert logger.logger is not None
         assert len(logger.logger.handlers) >= 1
         # Should have at least console handler even without logstash
-        assert any(isinstance(h, logging.StreamHandler) for h in logger.logger.handlers)
+        handlers = logger.logger.handlers
+        assert any(isinstance(h, logging.StreamHandler) for h in handlers)
 
     def test_logstash_handler_with_dependency(self):
         """Test logstash handler when dependency is available."""
