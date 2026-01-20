@@ -11,7 +11,7 @@ from .middlewares import ErrorMiddleware as MiddlewaresErrorMiddleware, create_e
 
 # Import aliases for backward compatibility (singular/plural forms)
 from .log import Logger as LogLogger, logger as log_logger
-from .responses import (Ok as ResponsesOk, Error as ResponsesError, 
+from .responses import (Ok as ResponsesOk, Error as ResponsesError,
                        police as responses_police)
 
 __all__ = [
@@ -31,7 +31,7 @@ __all__ = [
     "create_error_middleware",
     # Aliases for singular/plural compatibility
     "LogLogger",
-    "log_logger", 
+    "log_logger",
     "ResponsesOk",
     "ResponsesError",
     "responses_police",
