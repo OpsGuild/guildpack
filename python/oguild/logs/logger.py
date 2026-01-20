@@ -342,12 +342,40 @@ class Logger:
         """
         Returns the logger instance.
 
-        - If logger_name was provided: returns standard logging.Logger
-        - If logger_name was None: returns dynamic wrapper
+        - If logger_name was provided: returns standard Logger
+        - If logger_name is None: returns dynamic wrapper
         """
         if self._dynamic_wrapper is not None:
             return self._dynamic_wrapper
         return self.logger
+
+    def info(self, msg, *args, **kwargs):
+        """Proxy info logging to the underlying logger."""
+        return self.get_logger().info(msg, *args, **kwargs)
+
+    def debug(self, msg, *args, **kwargs):
+        """Proxy debug logging to the underlying logger."""
+        return self.get_logger().debug(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        """Proxy warning logging to the underlying logger."""
+        return self.get_logger().warning(msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        """Proxy error logging to the underlying logger."""
+        return self.get_logger().error(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        """Proxy critical logging to the underlying logger."""
+        return self.get_logger().critical(msg, *args, **kwargs)
+
+    def exception(self, msg, *args, **kwargs):
+        """Proxy exception logging to the underlying logger."""
+        return self.get_logger().exception(msg, *args, **kwargs)
+
+    def setLevel(self, level):
+        """Proxy setLevel to the underlying logger."""
+        return self.get_logger().setLevel(level)
 
 
 # Default logger instance with dynamic module detection
