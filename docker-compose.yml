@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  # Mini Python app to manually test oguild and guildpack functionality
+  test-app:
+    build:
+      context: .
+      dockerfile: test_app/Dockerfile
+    container_name: oguild-test-app
+    environment:
+      - LOG_LEVEL=DEBUG
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app

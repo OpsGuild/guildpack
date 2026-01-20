@@ -28,6 +28,10 @@ ci: lint test-cov
 test-workflow:
 	act -W .github/workflows/test.yml -j test --env MATRIX_PYTHON_VERSION=3.11
 
+# Run manual tests via Docker
+test-manual:
+	docker compose up --build --abort-on-container-exit
+
 # Clean up
 clean:
 	rm -rf .pytest_cache
