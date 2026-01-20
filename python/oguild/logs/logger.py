@@ -15,6 +15,17 @@ except ImportError:
     LOGSTASH_AVAILABLE = False
 
 
+# Internal storage for runtime-configured log level
+_CONFIGURED_LOG_LEVEL = None
+
+
+def get_default_log_level():
+    """Get the effective default log level (configured or from environment)."""
+    if _CONFIGURED_LOG_LEVEL is not None:
+        return _CONFIGURED_LOG_LEVEL
+    return getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
+
+
 class SmartLogger(logging.Logger):
     uuid_pattern = re.compile(r"UUID\(['\"]([0-9a-fA-F\-]+)['\"]\)")
 
@@ -89,29 +100,34 @@ class SmartLogger(logging.Logger):
         super()._log(level, msg, args, **kwargs)
 
     def info(self, msg, *args, format=False, **kwargs):
-        self._log_with_format_option(
-            logging.INFO, msg, args, format=format, **kwargs
-        )
+        if self.isEnabledFor(logging.INFO):
+            self._log_with_format_option(
+                logging.INFO, msg, args, format=format, **kwargs
+            )
 
     def debug(self, msg, *args, format=False, **kwargs):
-        self._log_with_format_option(
-            logging.DEBUG, msg, args, format=format, **kwargs
-        )
+        if self.isEnabledFor(logging.DEBUG):
+            self._log_with_format_option(
+                logging.DEBUG, msg, args, format=format, **kwargs
+            )
 
     def warning(self, msg, *args, format=False, **kwargs):
-        self._log_with_format_option(
-            logging.WARNING, msg, args, format=format, **kwargs
-        )
+        if self.isEnabledFor(logging.WARNING):
+            self._log_with_format_option(
+                logging.WARNING, msg, args, format=format, **kwargs
+            )
 
     def error(self, msg, *args, format=False, **kwargs):
-        self._log_with_format_option(
-            logging.ERROR, msg, args, format=format, **kwargs
-        )
+        if self.isEnabledFor(logging.ERROR):
+            self._log_with_format_option(
+                logging.ERROR, msg, args, format=format, **kwargs
+            )
 
     def critical(self, msg, *args, format=False, **kwargs):
-        self._log_with_format_option(
-            logging.CRITICAL, msg, args, format=format, **kwargs
-        )
+        if self.isEnabledFor(logging.CRITICAL):
+            self._log_with_format_option(
+                logging.CRITICAL, msg, args, format=format, **kwargs
+            )
 
 
 class _DynamicLoggerWrapper:
@@ -131,7 +147,7 @@ class _DynamicLoggerWrapper:
         logstash_database_path: str = None,
     ):
         self._log_file = log_file
-        self._log_level = log_level
+        self._log_level = log_level  # Can be None to use effective default
         self._log_format = log_format
         self._logstash_host = logstash_host
         self._logstash_port = logstash_port
@@ -160,7 +176,7 @@ class _DynamicLoggerWrapper:
         if module_name not in self._loggers:
             logging.setLoggerClass(SmartLogger)
             log = logging.getLogger(module_name)
-            log.setLevel(self._log_level)
+            log.setLevel(self._get_log_level(self._log_level))
             log.propagate = False
 
             if not log.handlers:
@@ -221,8 +237,16 @@ class _DynamicLoggerWrapper:
     def exception(self, msg, *args, **kwargs):
         self._log("exception", msg, *args, **kwargs)
 
+    def _get_log_level(self, log_level):
+        """Get log level from parameter or global default."""
+        if log_level is None:
+            return get_default_log_level()
+        return log_level
+
     def setLevel(self, level):
-        """Update log level for all cached loggers."""
+        """Update log level for all cached loggers and the global default."""
+        global _CONFIGURED_LOG_LEVEL
+        _CONFIGURED_LOG_LEVEL = level
         self._log_level = level
         for log in self._loggers.values():
             log.setLevel(level)
@@ -287,9 +311,9 @@ class Logger:
             raise ValueError(f"Invalid logstash_port: {port}")
 
     def _get_log_level(self, log_level):
-        """Get log level from parameter or environment."""
+        """Get log level from parameter or global default."""
         if log_level is None:
-            return getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
+            return get_default_log_level()
         return log_level
 
     def _setup_logger(self, logger_name, log_level, log_format, log_file,

@@ -49,6 +49,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
         default_error_message: str = "An unexpected error occurred",
         default_error_code: int = 500,
         include_request_info: bool = False,
+        include_stack_trace: bool = True,
+        include_error_attributes: bool = True,
     ):
         if FASTAPI_AVAILABLE and app is not None:
             super().__init__(app)
@@ -57,6 +59,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
         self.default_error_message = default_error_message
         self.default_error_code = default_error_code
         self.include_request_info = include_request_info
+        self.include_stack_trace = include_stack_trace
+        self.include_error_attributes = include_error_attributes
 
     async def dispatch(self, request, call_next):
         """FastAPI/Starlette middleware dispatch method"""
@@ -85,6 +89,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
                 msg=self.default_error_message,
                 code=None,  # Let Error class use handlers to determine status code
                 additional_info=request_info,
+                include_stack_trace=self.include_stack_trace,
+                include_error_attributes=self.include_error_attributes,
                 _raise_immediately=False,
             )
 
@@ -132,6 +138,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
                     msg=str(exc),
                     code=None,  # Let Error class use handlers to determine status code
                     additional_info=request_info,
+                    include_stack_trace=self.include_stack_trace,
+                    include_error_attributes=self.include_error_attributes,
                     _raise_immediately=False,
                 )
 
@@ -180,6 +188,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
                 msg=self.default_error_message,
                 code=None,  # Let Error class use handlers to determine status code
                 additional_info=request_info,
+                include_stack_trace=self.include_stack_trace,
+                include_error_attributes=self.include_error_attributes,
                 _raise_immediately=False,
             )
 
@@ -211,6 +221,8 @@ class ErrorMiddleware(BaseHTTPMiddleware if FASTAPI_AVAILABLE else object):
             msg=str(exc),
             code=None,  # Let Error class use handlers to determine status code
             additional_info=additional_info,
+            include_stack_trace=self.include_stack_trace,
+            include_error_attributes=self.include_error_attributes,
             _raise_immediately=False,
         )
 
@@ -225,6 +237,8 @@ def create_error_middleware(
     default_error_message: str = "An unexpected error occurred",
     default_error_code: int = 500,
     include_request_info: bool = False,
+    include_stack_trace: bool = True,
+    include_error_attributes: bool = True,
 ):
     """Factory function to create an ErrorMiddleware with custom configuration."""
 
@@ -235,6 +249,8 @@ def create_error_middleware(
                 default_error_message=default_error_message,
                 default_error_code=default_error_code,
                 include_request_info=include_request_info,
+                include_stack_trace=include_stack_trace,
+                include_error_attributes=include_error_attributes,
             )
 
     return ConfiguredErrorMiddleware

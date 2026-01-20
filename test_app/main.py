@@ -2,8 +2,10 @@ import asyncio
 import time
 import uuid
 import sys
+import logging
+import oguild
 
-# Test oguild imports
+# Test imports
 from oguild import (
     logger as og_logger, 
     Logger as OGLogger,
@@ -15,7 +17,6 @@ from oguild import (
 )
 from oguild.utils import Case as OGCase, convert_dict_keys as og_convert_keys
 
-# Test guildpack imports (alias)
 try:
     from guildpack import (
         logger as gp_logger,
@@ -29,71 +30,62 @@ try:
 except ImportError:
     HAS_GUILDPACK = False
 
-async def test_oguild_features():
-    og_logger.info("--- Testing oguild functionality ---")
+async def test_log_inheritance():
+    og_logger.info("--- Testing log level inheritance ---")
+    og_logger.setLevel(logging.INFO)
+    og_logger.info("Main logger set to INFO.")
     
-    # 1. Logger
-    og_logger.debug("OG Dynamic Logger Debug")
-    custom_og = OGLogger(logger_name="OG_Explicit").get_logger()
-    custom_og.info("OG Explicit Logger Info")
-    
-    # 2. Ok Response
-    res_ok = OGOk(data={"key": "value"}, message="Success from oguild")
-    og_logger.info(f"OG Ok Response: {res_ok}", format=True)
-    
-    # 3. Error Response & Police
-    @og_police
-    def og_protected_func(should_fail=False):
-        if should_fail:
-            # Error raises immediately by default
-            OGError("Intentional oguild error", 400)
-        return "Everything is fine"
-
-    og_logger.info(f"OG Protected Func (Success): {og_protected_func()}")
-    
+    # 3. Test Error class inheritance
+    og_logger.info("Triggering Error while level is INFO. Internal DEBUG logs should be suppressed.")
     try:
-        og_protected_func(should_fail=True)
-    except Exception as e:
-        og_logger.error(f"Caught OG Protected Error: {e}")
-    
-    # 4. Utils (Sanitize & Case)
-    raw_data = {"user_id": 1, "password": "secret_password", "_id": uuid.uuid4()}
-    # sanitize_fields is async
-    sanitized = await og_sanitize(raw_data)
-    og_logger.info(f"OG Sanitized Data: {sanitized}")
-    
-    camel_data = og_convert_keys({"first_name": "horduntech"}, OGCase.CAMEL)
-    og_logger.info(f"OG Case Conversion: {camel_data}")
+        raise OGError("Test Error suppression via level", code=500)
+    except Exception:
+        pass
 
-async def test_guildpack_features():
-    if not HAS_GUILDPACK:
-        og_logger.warning("guildpack package not found, skipping its tests")
-        return
+async def test_log_toggles():
+    og_logger.info("--- Testing explicit log toggles (Stack Trace & Attributes) ---")
+    # Even if level is DEBUG, we should be able to suppress specific logs
+    og_logger.setLevel(logging.DEBUG)
+    og_logger.info("Level set to DEBUG.")
 
-    gp_logger.info("--- Testing guildpack (alias) functionality ---")
-    
-    # 1. Logger
-    gp_logger.info("GP Dynamic Logger Info")
-    
-    # 2. Ok Response
-    res_ok = GPOk(201, "Created from guildpack", {"id": 100})
-    gp_logger.info(f"GP Ok Response: {res_ok}", format=True)
-    
-    # 3. Error Response & Police
-    @gp_police
-    async def gp_protected_async():
-        # Testing Error with status code
-        raise GPError("Guildpack Async Error", 500)
-
+    og_logger.info("1. Triggering Error with BOTH toggles OFF. You should see NO 'Error attributes' or 'Stack trace' below.")
     try:
-        await gp_protected_async()
-    except Exception as e:
-        gp_logger.error(f"Caught GP Async Protected Error: {e}")
+        raise OGError(
+            "Silent Error", 
+            include_stack_trace=False, 
+            include_error_attributes=False
+        )
+    except Exception:
+        pass
 
-    # 4. Case Enum
-    snake_key = "IsThisCamel?"
-    # Just checking the enum exists and works
-    gp_logger.info(f"GP Case Enum Member: {GPCase.SNAKE}")
+    og_logger.info("2. Triggering Error with ONLY Attributes ON.")
+    try:
+        raise OGError(
+            "Attributes only", 
+            include_stack_trace=False, 
+            include_error_attributes=True
+        )
+    except Exception:
+        pass
+
+    og_logger.info("Resetting level to INFO.")
+    og_logger.setLevel(logging.INFO)
+
+async def test_middleware_toggles():
+    og_logger.info("--- Testing Middleware log toggles ---")
+    # Simulate middleware initialization with toggles OFF
+    mw = OGErrorMiddleware(
+        None, 
+        include_stack_trace=False, 
+        include_error_attributes=False
+    )
+    
+    og_logger.info("Processing exception through Middleware (toggles OFF). Should be silent.")
+    try:
+        # Pass a raw exception
+        mw.handle_exception(ValueError("Middleware test exception"))
+    except Exception:
+        pass
 
 async def main():
     og_logger.info("==========================================")
@@ -101,12 +93,14 @@ async def main():
     og_logger.info("==========================================")
     
     try:
-        await test_oguild_features()
-        await test_guildpack_features()
+        await test_log_inheritance()
+        await test_log_toggles()
+        await test_middleware_toggles()
         
-        # Test Middleware instantiation
-        mw = OGErrorMiddleware(None)
-        og_logger.info("OG ErrorMiddleware instantiated successfully")
+        # Original tests
+        raw_data = {"user_id": 1, "password": "secret_password", "_id": uuid.uuid4()}
+        sanitized = await og_sanitize(raw_data)
+        og_logger.info(f"OG Sanitized Data: {sanitized}")
         
     except Exception as e:
         og_logger.critical(f"Unexpected crash in test app: {e}")
@@ -116,8 +110,6 @@ async def main():
     og_logger.info("==========================================")
     og_logger.info("🏁 MANUAL TEST COMPLETED")
     og_logger.info("==========================================")
-    
-    # Wait a moment for logs to flush before exiting
     await asyncio.sleep(2)
 
 if __name__ == "__main__":

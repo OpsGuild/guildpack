@@ -265,6 +265,10 @@ class Error(Exception):
         code: Optional[int] = kwargs.pop("code", None)
         level: Optional[str] = kwargs.pop("level", None)
         additional_info: Optional[dict] = kwargs.pop("additional_info", None)
+        include_stack_trace: bool = kwargs.pop("include_stack_trace", True)
+        include_error_attributes: bool = kwargs.pop(
+            "include_error_attributes", True
+        )
         _raise_immediately: bool = kwargs.pop("_raise_immediately", True)
 
         if "error" in kwargs and not e:
@@ -302,6 +306,8 @@ class Error(Exception):
             self.http_status_code = None  # Let handlers determine
         self.level = level or "ERROR"
         self.additional_info = additional_info or {}
+        self.include_stack_trace = include_stack_trace
+        self.include_error_attributes = include_error_attributes
 
         self.error_id = str(uuid.uuid4())
 
@@ -354,17 +360,19 @@ class Error(Exception):
 
     def to_dict(self):
         if self.e:
-            self.logger.debug(
-                f"Error attributes: {self.common_handler.get_exception_attributes(self.e)}"
-            )
-            self.logger.debug(
-                "Stack trace:\n"
-                + "".join(
-                    traceback.format_exception(
-                        type(self.e), self.e, self.e.__traceback__
+            if self.include_error_attributes:
+                self.logger.debug(
+                    f"Error attributes: {self.common_handler.get_exception_attributes(self.e)}"
+                )
+            if self.include_stack_trace:
+                self.logger.debug(
+                    "Stack trace:\n"
+                    + "".join(
+                        traceback.format_exception(
+                            type(self.e), self.e, self.e.__traceback__
+                        )
                     )
                 )
-            )
         else:
             self.logger.error(self.msg)
 
@@ -389,19 +397,16 @@ class Error(Exception):
     def to_framework_exception(self):
         # If the underlying exception is already a framework exception or Error,
         # return it directly to avoid any double-wrapping
-        if (
-            FastAPIHTTPException is not None
-            and isinstance(self.e, FastAPIHTTPException)
+        if FastAPIHTTPException is not None and isinstance(
+            self.e, FastAPIHTTPException
         ):
             return self.e
-        if (
-            StarletteHTTPException is not None
-            and isinstance(self.e, StarletteHTTPException)
+        if StarletteHTTPException is not None and isinstance(
+            self.e, StarletteHTTPException
         ):
             return self.e
-        if (
-            WerkzeugHTTPException is not None
-            and isinstance(self.e, WerkzeugHTTPException)
+        if WerkzeugHTTPException is not None and isinstance(
+            self.e, WerkzeugHTTPException
         ):
             return self.e
         if isinstance(self.e, Error):
