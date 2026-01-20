@@ -6,6 +6,6 @@ from ..logs import *
 # Re-export everything for backward compatibility
 __all__ = [
     "Logger",
-    "SmartLogger", 
+    "SmartLogger",
     "logger",
 ]
