@@ -73,9 +73,19 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Build package
+      - name: Build oguild package
         run: poetry build
 
-      - name: Publish to PyPI
+      - name: Publish oguild to PyPI
         run: poetry publish --no-interaction --skip-existing
 
+      - name: Build guildpack alias package
+        run: |
+          cd alias
+          poetry build
+
+      - name: Publish guildpack to PyPI
+        run: |
+          cd alias
+          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
+          poetry publish --no-interaction --skip-existing

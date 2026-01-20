@@ -35,3 +35,19 @@ clean:
 	rm -rf htmlcov
 	rm -rf dist
 	rm -rf build
+	rm -rf alias/dist
+	rm -rf alias/build
+
+# Build both packages
+build-all:
+	poetry build
+	cd alias && poetry build
+
+# Publish both packages to PyPI
+publish-all:
+	poetry publish
+	cd alias && poetry publish
+
+# Build and publish both packages
+release: build-all publish-all
+

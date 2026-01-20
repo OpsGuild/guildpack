@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oguild"
-version = "0.1.12"
+version = "0.1.13"
 description = "OGuild utilities — reusable logging and helpers for Python projects"
 readme = "README.md"
 authors = ["Hordunlarmy <Hordunlarmy@gmail.com>"]
@@ -62,7 +62,7 @@ testpaths = ["python/test"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = [
     "-v",
     "--tb=short",
